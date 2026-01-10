@@ -3,10 +3,10 @@
 
 repository:
   # Repository settings
-  name: techblog_workspace
-  description: "技術ブログ記事の執筆・校正とコード検証のためのワークスペース"
+  name: backlog-readonly-mcp
+  description: "Backlog読み取り専用MCPサーバー - プロジェクト、課題、ユーザー情報を安全に取得"
   homepage: ""
-  topics: ["blog", "markdown", "cdk", "aws", "typescript"]
+  topics: ["mcp", "backlog", "readonly", "api", "typescript"]
   private: false
   has_issues: true
   has_projects: false

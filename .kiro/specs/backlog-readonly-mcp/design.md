@@ -2,7 +2,7 @@
 
 ## 概要
 
-Backlog読み取り専用MCPサーバーは、TypeScriptとNode.jsを使用して実装されるModel Context Protocolサーバーです。このサーバーは、BacklogのREST APIを利用してプロジェクト、課題、ユーザー、Wikiなどの情報を読み取り専用で提供します。セキュリティを重視し、データの変更や作成は一切行いません。
+Backlog 読み取り専用 MCP サーバーは、TypeScript と Node.js を使用して実装される Model Context Protocol サーバーです。このサーバーは、Backlog の REST API を利用してプロジェクト、課題、ユーザー、Wiki などの情報を読み取り専用で提供します。セキュリティを重視し、データの変更や作成は一切行いません。
 
 ## アーキテクチャ
 
@@ -36,41 +36,41 @@ graph TB
 
 ### レイヤー構成
 
-1. **MCPプロトコル層**: MCPクライアントとの通信を処理
-2. **ツール層**: 各種Backlogツールの実装
-3. **APIクライアント層**: Backlog REST APIとの通信
+1. **MCPプロトコル層**: MCP クライアントとの通信を処理
+2. **ツール層**: 各種 Backlog ツールの実装
+3. **APIクライアント層**: Backlog REST API との通信
 4. **ユーティリティ層**: エラーハンドリング、ログ、設定管理
 
-## コンポーネントとインターフェース
+## コンポーネントとインタフェース
 
 ### MCPサーバーコンポーネント
 
 #### 1. MCPサーバー（McpServer）
-- **責任**: MCPプロトコルの処理、ツールの登録・管理
+- **責任**: MCP プロトコルの処理、ツールの登録・管理
 - **依存関係**: @modelcontextprotocol/sdk
-- **インターフェース**: 
+- **インタフェース**: 
   - `listTools()`: 利用可能なツール一覧を返す
   - `callTool(name, args)`: 指定されたツールを実行
 
 #### 2. BacklogAPIクライアント（BacklogApiClient）
-- **責任**: Backlog REST APIとの通信、APIキーの安全な管理
-- **設定**: 環境変数（ワークスペース`.backlog-mcp.env`優先）からAPIキー・ドメイン・オプション設定を読み込み
+- **責任**: Backlog REST API との通信、API キーの安全な管理
+- **設定**: 環境変数（ワークスペース `.backlog-mcp.env` 優先）から API キー・ドメイン・オプション設定を読み込み
 - **セキュリティ機能**:
-  - APIキーのマスキング（ログ出力時）
-  - APIキーの有効性検証
-- **インターフェース**:
-  - `get(endpoint, params?)`: GETリクエストの実行
+  - API キーのマスキング（ログ出力時）
+  - API キーの有効性検証
+- **インタフェース**:
+  - `get(endpoint, params?)`: GET リクエストの実行
   - `handleRateLimit()`: レート制限の処理
-  - `validateApiKey()`: APIキーの有効性チェック
-  - `loadConfig()`: 環境変数と.backlog-mcp.envファイルからの設定読み込み
+  - `validateApiKey()`: API キーの有効性チェック
+  - `loadConfig()`: 環境変数と.backlog-mcp.env ファイルからの設定読み込み
 
 #### 3. ツールレジストリ（ToolRegistry）
-- **責任**: 各種Backlogツールの登録と管理
+- **責任**: 各種 Backlog ツールの登録と管理
 - **ツールカテゴリ**:
   - プロジェクト関連ツール
   - 課題関連ツール
   - ユーザー関連ツール
-  - Wiki関連ツール
+  - Wiki 関連ツール
   - マスタデータ関連ツール
 
 ### ツール実装
@@ -122,18 +122,18 @@ interface BacklogConfig {
 ### APIキー管理
 
 #### 環境変数による設定
-APIキーとドメインは環境変数で管理し、ワークスペース単位での設定も可能です。
+API キーとドメインは環境変数で管理し、ワークスペース単位での設定も可能です。
 
 **設定の優先順位**：
 1. **ワークスペース設定ファイル** (最優先)
-   - プロジェクトルートの`.backlog-mcp.env`ファイル
+   - プロジェクトルートの `.backlog-mcp.env` ファイル
    - ワークスペース固有の設定
 2. **システム環境変数**
    - グローバルな設定
 
 **必須環境変数**:
-- `BACKLOG_API_KEY`: BacklogのAPIキー
-- `BACKLOG_DOMAIN`: Backlogドメイン（例: your-company.backlog.com）
+- `BACKLOG_API_KEY`: Backlog の API キー
+- `BACKLOG_DOMAIN`: Backlog ドメイン（例: your-company.backlog.com）
 
 **オプション環境変数**:
 - `BACKLOG_DEFAULT_PROJECT`: デフォルトプロジェクトキー（例: MYPROJ）
@@ -141,7 +141,7 @@ APIキーとドメインは環境変数で管理し、ワークスペース単�
 - `BACKLOG_TIMEOUT`: タイムアウト（ms、デフォルト: 30000）
 
 #### ワークスペース単位の設定
-プロジェクトルートに`.backlog-mcp.env`ファイルを配置することで、ワークスペース固有の設定が可能：
+プロジェクトルートに `.backlog-mcp.env` ファイルを配置することで、ワークスペース固有の設定が可能：
 
 ```bash
 # プロジェクトA/.backlog-mcp.env
@@ -158,9 +158,9 @@ BACKLOG_DEFAULT_PROJECT="PROJB"
 #### デフォルトプロジェクト機能
 多くの場合、特定のプロジェクトに集中して作業するため、デフォルトプロジェクトを設定できます：
 
-- `BACKLOG_DEFAULT_PROJECT`が設定されている場合、プロジェクトIDを省略可能
+- `BACKLOG_DEFAULT_PROJECT` が設定されている場合、プロジェクト ID を省略可能
 - 課題取得時に自動的にデフォルトプロジェクトを使用
-- 明示的にプロジェクトIDを指定すれば他のプロジェクトにもアクセス可能
+- 明示的にプロジェクト ID を指定すれば他のプロジェクトにもアクセス可能
 
 #### セキュリティ対策
 ```typescript
@@ -180,7 +180,7 @@ export BACKLOG_DOMAIN="your-company.backlog.com"
 export BACKLOG_API_KEY="your-api-key-here"
 ```
 
-**ワークスペース固有の設定** (`.backlog-mcp.env`ファイル):
+**ワークスペース固有の設定** (`.backlog-mcp.env` ファイル):
 ```bash
 # プロジェクトA/.backlog-mcp.env
 BACKLOG_DOMAIN="company-a.backlog.com"
@@ -206,7 +206,7 @@ BACKLOG_TIMEOUT="30000"
 }
 ```
 
-**注意**: MCPクライアント設定では`cwd`を`${workspaceFolder}`に設定することで、ワークスペースの`.backlog-mcp.env`ファイルが自動的に読み込まれます。
+**注意**: MCP クライアント設定では `cwd` を `${workspaceFolder}` に設定することで、ワークスペースの `.backlog-mcp.env` ファイルが自動的に読み込まれます。
 
 #### 使用例
 ```typescript

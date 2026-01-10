@@ -36,13 +36,13 @@ export class BacklogApiClient {
   }
 
   /**
-   * GETリクエストを実行
+   * GETリクエストを実行（読み取り専用）
    */
   public async get<T = unknown>(
     endpoint: string,
     params?: Record<string, unknown>,
   ): Promise<T> {
-    try {
+    return this.executeWithRetry(async () => {
       const response: AxiosResponse<T> = await this.axiosInstance.get(
         endpoint,
         {
@@ -50,9 +50,72 @@ export class BacklogApiClient {
         },
       );
       return response.data;
-    } catch (error) {
-      throw this.convertToBacklogError(error);
+    });
+  }
+
+  /**
+   * リトライ機能付きでリクエストを実行
+   */
+  private async executeWithRetry<T>(requestFn: () => Promise<T>): Promise<T> {
+    let attempt = 0;
+
+    // 再帰ではなくループでリトライを行うことで、スタックオーバーフローのリスクを避ける
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        if (attempt < this.config.maxRetries && this.shouldRetry(error)) {
+          console.warn(
+            `リクエストが失敗しました。リトライします... (${attempt + 1}/${this.config.maxRetries})`,
+          );
+          await this.delay(2 ** attempt * 1000); // 指数バックオフ
+          attempt += 1;
+          continue;
+        }
+        throw this.convertToBacklogError(error);
+      }
     }
+  }
+
+  /**
+   * リトライすべきエラーかどうかを判定
+   */
+  private shouldRetry(error: unknown): boolean {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      // 5xx系エラーまたは429（レート制限）の場合はリトライ
+      return status === 429 || (status !== undefined && status >= 500);
+    }
+    return false;
+  }
+
+  /**
+   * 指定時間待機
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * 読み取り専用制限：POST、PUT、DELETEリクエストは禁止
+   */
+  public async post(): Promise<never> {
+    throw new Error(
+      'このMCPサーバーは読み取り専用です。POSTリクエストは許可されていません。',
+    );
+  }
+
+  public async put(): Promise<never> {
+    throw new Error(
+      'このMCPサーバーは読み取り専用です。PUTリクエストは許可されていません。',
+    );
+  }
+
+  public async delete(): Promise<never> {
+    throw new Error(
+      'このMCPサーバーは読み取り専用です。DELETEリクエストは許可されていません。',
+    );
   }
 
   /**
@@ -62,7 +125,7 @@ export class BacklogApiClient {
     try {
       await this.get('/users/myself');
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

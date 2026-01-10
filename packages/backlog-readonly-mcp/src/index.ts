@@ -14,15 +14,30 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-// TODO: 他のモジュールをインポート
-// import { BacklogApiClient } from './client/backlog-api-client.js';
-// import { ConfigManager } from './config/config-manager.js';
-// import { ToolRegistry } from './tools/tool-registry.js';
+// 必要なモジュールをインポート
+import { BacklogApiClient } from './client/backlog-api-client.js';
+import { ConfigManager } from './config/config-manager.js';
+import { ToolRegistry } from './tools/tool-registry.js';
 
 /**
  * MCPサーバーのメイン関数
  */
 async function main() {
+  // 設定管理とAPIクライアントの初期化
+  const configManager = ConfigManager.getInstance();
+  await configManager.loadConfig();
+  const _apiClient = new BacklogApiClient(configManager);
+
+  // ツールレジストリの初期化
+  const toolRegistry = new ToolRegistry();
+
+  // TODO: ツールの登録
+  // registerProjectTools(toolRegistry, apiClient);
+  // registerIssueTools(toolRegistry, apiClient);
+  // registerUserTools(toolRegistry, apiClient);
+  // registerWikiTools(toolRegistry, apiClient);
+  // registerMasterDataTools(toolRegistry, apiClient);
+
   const server = new Server(
     {
       name: 'backlog-readonly-mcp',
@@ -38,9 +53,7 @@ async function main() {
   // ツール一覧の取得
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
-      tools: [
-        // TODO: ツールを登録
-      ],
+      tools: toolRegistry.getTools(),
     };
   });
 
@@ -48,8 +61,29 @@ async function main() {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: toolArgs } = request.params;
 
-    // TODO: ツール呼び出しの実装
-    throw new Error(`Unknown tool: ${name}`);
+    try {
+      const result = await toolRegistry.executeTool(name, toolArgs || {});
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
   });
 
   // サーバーの起動

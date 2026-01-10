@@ -4,73 +4,48 @@
  * MCPサーバーで提供するツールの登録と管理を行います。
  */
 
-import type { BacklogApiClient } from '../client/backlog-api-client.js';
-import type { ToolDefinition, ToolResult } from '../types/index.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
-export type ToolHandler = (
-  args: Record<string, unknown>,
-  client: BacklogApiClient,
-) => Promise<ToolResult>;
+export type ToolHandler = (args: Record<string, unknown>) => Promise<unknown>;
 
 export class ToolRegistry {
-  private tools: Map<
-    string,
-    { definition: ToolDefinition; handler: ToolHandler }
-  > = new Map();
+  private tools: Map<string, Tool> = new Map();
+  private handlers: Map<string, ToolHandler> = new Map();
 
   /**
-   * ツールを登録
+   * ツールを登録します
    */
-  public registerTool(definition: ToolDefinition, handler: ToolHandler): void {
-    this.tools.set(definition.name, { definition, handler });
+  registerTool(tool: Tool, handler: ToolHandler): void {
+    this.tools.set(tool.name, tool);
+    this.handlers.set(tool.name, handler);
   }
 
   /**
-   * 登録されているツール一覧を取得
+   * 登録されているツールの一覧を取得します
    */
-  public getToolDefinitions(): ToolDefinition[] {
-    return Array.from(this.tools.values()).map((tool) => tool.definition);
+  getTools(): Tool[] {
+    return Array.from(this.tools.values());
   }
 
   /**
-   * ツールを実行
+   * ツールを実行します
    */
-  public async executeTool(
+  async executeTool(
     name: string,
     args: Record<string, unknown>,
-    client: BacklogApiClient,
-  ): Promise<ToolResult> {
-    const tool = this.tools.get(name);
-    if (!tool) {
+  ): Promise<unknown> {
+    const handler = this.handlers.get(name);
+    if (!handler) {
       throw new Error(`Unknown tool: ${name}`);
     }
 
-    try {
-      return await tool.handler(args, client);
-    } catch (error) {
-      // エラーをMCP形式で返す
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `エラー: ${error instanceof Error ? error.message : String(error)}`,
-          },
-        ],
-      };
-    }
+    return await handler(args);
   }
 
   /**
-   * ツールが存在するかチェック
+   * ツールが存在するかチェックします
    */
-  public hasTool(name: string): boolean {
+  hasTool(name: string): boolean {
     return this.tools.has(name);
-  }
-
-  /**
-   * 登録されているツール数を取得
-   */
-  public getToolCount(): number {
-    return this.tools.size;
   }
 }

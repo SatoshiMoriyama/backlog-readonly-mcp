@@ -1,0 +1,41 @@
+{
+  "[markdown]": {
+    "editor.formatOnSave": false
+  },
+  "[typescript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "cSpell.words": [
+    "awsglue",
+    "biomejs",
+    "Blurrer",
+    "dynamicframe",
+    "HMAC",
+    "Kiro",
+    "markdownlint",
+    "nwiizo",
+    "pids",
+    "Qiita",
+    "SWITCHBOT",
+    "techblog",
+    "textlint",
+    "textlintrc"
+  ],
+  "cSpell.ignorePaths": [
+    "node_modules/**",
+    "pnpm-lock.yaml",
+    ".git/**",
+    "**/*.min.js",
+    "**/*.min.css",
+    "dist/**",
+    "build/**",
+    ".vscode/**",
+    ".kiro/**",
+    ".gitignore"
+  ]
+}

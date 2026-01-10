@@ -1,0 +1,32 @@
+{
+  "rules": {
+    "preset-ja-technical-writing": {
+      "sentence-length": {
+        "max": 90
+      },
+      "max-ten": {
+        "max": 3
+      },
+      "difficult-word": false,
+      "no-exclamation-question-mark": false
+    },
+    "preset-japanese": {
+      "sentence-length": false,
+      "max-ten": false
+    },
+    "preset-ja-spacing": {
+      "ja-space-between-half-and-full-width": {
+        "space": "always"
+      },
+      "ja-space-around-code": {
+        "before": true,
+        "after": true
+      }
+    },
+    "spellcheck-tech-word": {
+      "allow": [
+        "Qiita"
+      ]
+    }
+  }
+}

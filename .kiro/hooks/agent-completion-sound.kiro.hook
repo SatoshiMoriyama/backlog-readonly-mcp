@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Agent Completion Sound",
+  "description": "エージェントの実行が完了した時にPing音を鳴らして通知します（macOS専用）",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "afplay /System/Library/Sounds/Ping.aiff"
+  },
+  "shortName": "agent-completion-sound",
+  "workspaceFolderName": "techblog_workspace"
+}

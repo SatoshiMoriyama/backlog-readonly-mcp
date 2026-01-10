@@ -47,7 +47,7 @@ export class ConfigManager {
     };
 
     // ワークスペース設定ファイルから設定を読み込み
-    let workspaceConfig: Record<string, string | undefined> = {};
+    const workspaceConfig: Record<string, string | undefined> = {};
     const workspaceConfigPath = join(process.cwd(), '.backlog-mcp.env');
     if (existsSync(workspaceConfigPath)) {
       try {

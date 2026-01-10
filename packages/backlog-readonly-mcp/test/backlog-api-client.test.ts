@@ -5,8 +5,8 @@
  * 検証対象: 要件 1.1, 1.2, 1.3
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BacklogApiClient } from '../src/client/backlog-api-client.js';
 import { ConfigManager } from '../src/config/config-manager.js';
 
@@ -16,7 +16,14 @@ const mockedAxios = vi.mocked(axios);
 
 describe('BacklogApiClient Property Tests', () => {
   let originalEnv: Record<string, string | undefined>;
-  let mockAxiosInstance: any;
+  let mockAxiosInstance: {
+    get: ReturnType<typeof vi.fn>;
+    interceptors: {
+      response: {
+        use: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
 
   beforeEach(() => {
     // 環境変数を保存
@@ -39,7 +46,12 @@ describe('BacklogApiClient Property Tests', () => {
     };
 
     mockedAxios.create = vi.fn().mockReturnValue(mockAxiosInstance);
-    mockedAxios.isAxiosError = vi.fn();
+    // 型述語を正しく処理するためのモック
+    vi.mocked(axios.isAxiosError).mockImplementation(
+      (payload: unknown): payload is AxiosError => {
+        return payload instanceof Error && 'response' in payload;
+      },
+    );
   });
 
   afterEach(() => {
@@ -100,14 +112,21 @@ describe('BacklogApiClient Property Tests', () => {
           data: { id: 1, userId: 'testuser', name: 'Test User' },
         });
       } else {
-        const error = new Error('Unauthorized');
-        (error as any).response = {
+        const error = new Error('Unauthorized') as Error & {
+          response: {
+            status: number;
+            data: {
+              errors: Array<{ code: string; message: string }>;
+            };
+          };
+        };
+        error.response = {
           status: 401,
           data: {
             errors: [{ code: 'Unauthorized', message: 'Invalid API key' }],
           },
         };
-        mockedAxios.isAxiosError.mockReturnValue(true);
+        vi.mocked(axios.isAxiosError).mockReturnValue(true);
         mockAxiosInstance.get.mockRejectedValue(error);
       }
 
@@ -165,6 +184,7 @@ describe('BacklogApiClient Property Tests', () => {
     // テスト用設定
     process.env.BACKLOG_DOMAIN = 'test.backlog.com';
     process.env.BACKLOG_API_KEY = 'test-api-key';
+    process.env.BACKLOG_MAX_RETRIES = '0'; // リトライを無効にしてタイムアウトを防ぐ
 
     const client = new BacklogApiClient();
 
@@ -204,18 +224,21 @@ describe('BacklogApiClient Property Tests', () => {
     ];
 
     for (const scenario of errorScenarios) {
-      mockedAxios.isAxiosError.mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
       mockAxiosInstance.get.mockRejectedValue(scenario.error);
 
       try {
         await client.get('/test-endpoint');
         expect.fail('Should have thrown an error');
-      } catch (error: any) {
+      } catch (error: unknown) {
         // BacklogError形式に変換されていることを確認
         expect(error).toHaveProperty('code');
         expect(error).toHaveProperty('message');
-        expect(typeof error.code).toBe('string');
-        expect(typeof error.message).toBe('string');
+
+        // 型安全性のためのアサーション
+        const backlogError = error as { code: string; message: string };
+        expect(typeof backlogError.code).toBe('string');
+        expect(typeof backlogError.message).toBe('string');
       }
 
       // 次のテストのためにモックをリセット
@@ -249,11 +272,13 @@ describe('BacklogApiClient Property Tests', () => {
       },
     };
 
-    mockedAxios.isAxiosError.mockReturnValue(true);
+    vi.mocked(axios.isAxiosError).mockReturnValue(true);
+
+    // 3回の呼び出しに対して個別にモックを設定
     mockAxiosInstance.get
-      .mockRejectedValueOnce(serverError)
-      .mockRejectedValueOnce(serverError)
-      .mockResolvedValueOnce({ data: { success: true } });
+      .mockRejectedValueOnce(serverError) // 1回目: エラー
+      .mockRejectedValueOnce(serverError) // 2回目: エラー
+      .mockResolvedValueOnce({ data: { success: true } }); // 3回目: 成功
 
     // リトライが実行されることを確認
     const result = await client.get('/test-endpoint');
@@ -274,7 +299,7 @@ describe('BacklogApiClient Property Tests', () => {
     try {
       await client.get('/test-endpoint');
       expect.fail('Should have thrown an error');
-    } catch (error) {
+    } catch (_error) {
       // リトライされずに即座にエラーになることを確認
       expect(mockAxiosInstance.get).toHaveBeenCalledTimes(1);
     }

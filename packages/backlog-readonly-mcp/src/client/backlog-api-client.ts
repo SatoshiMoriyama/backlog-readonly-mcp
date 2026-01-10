@@ -69,7 +69,7 @@ export class BacklogApiClient {
           console.warn(
             `リクエストが失敗しました。リトライします... (${attempt + 1}/${this.config.maxRetries})`,
           );
-          await this.delay(Math.pow(2, attempt) * 1000); // 指数バックオフ
+          await this.delay(2 ** attempt * 1000); // 指数バックオフ
           attempt += 1;
           continue;
         }
@@ -125,7 +125,7 @@ export class BacklogApiClient {
     try {
       await this.get('/users/myself');
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

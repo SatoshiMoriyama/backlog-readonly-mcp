@@ -5,9 +5,9 @@
  * 検証対象: 要件 1.4
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ConfigManager } from '../src/config/config-manager.js';
 
 describe('ConfigManager Property Tests', () => {
@@ -86,7 +86,7 @@ describe('ConfigManager Property Tests', () => {
       },
     ];
 
-    testConfigs.forEach((testConfig, index) => {
+    testConfigs.forEach((testConfig, _index) => {
       // 環境変数をクリア
       delete process.env.BACKLOG_DOMAIN;
       delete process.env.BACKLOG_API_KEY;
@@ -168,7 +168,7 @@ describe('ConfigManager Property Tests', () => {
       },
     ];
 
-    testCases.forEach((testCase, index) => {
+    testCases.forEach((testCase, _index) => {
       // 環境変数をクリア
       delete process.env.BACKLOG_DOMAIN;
       delete process.env.BACKLOG_API_KEY;

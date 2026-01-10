@@ -31,6 +31,9 @@ function main() {
     // 3. Kiro Hookを更新
     updateKiroHook(workspaceName);
     
+    // 4. GitHub Settings設定を更新
+    updateGitHubSettings(workspaceName, kebabName);
+    
     console.log('✅ セットアップ完了!');
     console.log(`ワークスペース名: ${workspaceName}`);
     console.log('blog_content/blog.md を編集してブログを書き始めてください。');
@@ -110,6 +113,35 @@ function updateKiroHook(workspaceName) {
     console.log(`✅ ${hookPath} を更新しました`);
   } else {
     console.log(`ℹ️ ${hookPath} が存在しないため、スキップしました`);
+  }
+}
+
+function updateGitHubSettings(workspaceName, kebabName) {
+  const settingsPath = '.github/settings.yml';
+  
+  if (fs.existsSync(settingsPath)) {
+    let settingsContent;
+    try {
+      settingsContent = fs.readFileSync(settingsPath, 'utf8');
+    } catch (error) {
+      throw new Error(`${settingsPath} の読み込みに失敗しました: ${error.message}`);
+    }
+    
+    // リポジトリ名、説明、トピックを更新
+    settingsContent = settingsContent
+      .replace(/name:\s*[^\n]+/, `name: ${workspaceName}`)
+      .replace(/description:\s*"[^"]*"/, `description: "${kebabName}に関する技術ブログ記事の執筆・校正とコード検証のためのワークスペース"`)
+      .replace(/topics:\s*\[[^\]]*\]/, `topics: ["blog", "markdown", "cdk", "aws", "typescript", "${kebabName}"]`);
+    
+    try {
+      fs.writeFileSync(settingsPath, settingsContent);
+    } catch (error) {
+      throw new Error(`${settingsPath} の書き込みに失敗しました: ${error.message}`);
+    }
+    
+    console.log(`✅ ${settingsPath} を更新しました`);
+  } else {
+    console.log(`ℹ️ ${settingsPath} が存在しないため、スキップしました`);
   }
 }
 

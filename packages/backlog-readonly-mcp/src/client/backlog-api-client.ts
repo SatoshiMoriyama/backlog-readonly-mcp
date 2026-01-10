@@ -36,13 +36,13 @@ export class BacklogApiClient {
   }
 
   /**
-   * GETリクエストを実行
+   * GETリクエストを実行（読み取り専用）
    */
   public async get<T = unknown>(
     endpoint: string,
     params?: Record<string, unknown>,
   ): Promise<T> {
-    try {
+    return this.executeWithRetry(async () => {
       const response: AxiosResponse<T> = await this.axiosInstance.get(
         endpoint,
         {
@@ -50,9 +50,68 @@ export class BacklogApiClient {
         },
       );
       return response.data;
+    });
+  }
+
+  /**
+   * リトライ機能付きでリクエストを実行
+   */
+  private async executeWithRetry<T>(
+    requestFn: () => Promise<T>,
+    retryCount = 0,
+  ): Promise<T> {
+    try {
+      return await requestFn();
     } catch (error) {
+      if (retryCount < this.config.maxRetries && this.shouldRetry(error)) {
+        console.warn(
+          `リクエストが失敗しました。リトライします... (${retryCount + 1}/${this.config.maxRetries})`,
+        );
+        await this.delay(Math.pow(2, retryCount) * 1000); // 指数バックオフ
+        return this.executeWithRetry(requestFn, retryCount + 1);
+      }
       throw this.convertToBacklogError(error);
     }
+  }
+
+  /**
+   * リトライすべきエラーかどうかを判定
+   */
+  private shouldRetry(error: unknown): boolean {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      // 5xx系エラーまたは429（レート制限）の場合はリトライ
+      return status === 429 || (status !== undefined && status >= 500);
+    }
+    return false;
+  }
+
+  /**
+   * 指定時間待機
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * 読み取り専用制限：POST、PUT、DELETEリクエストは禁止
+   */
+  public async post(): Promise<never> {
+    throw new Error(
+      'このMCPサーバーは読み取り専用です。POSTリクエストは許可されていません。',
+    );
+  }
+
+  public async put(): Promise<never> {
+    throw new Error(
+      'このMCPサーバーは読み取り専用です。PUTリクエストは許可されていません。',
+    );
+  }
+
+  public async delete(): Promise<never> {
+    throw new Error(
+      'このMCPサーバーは読み取り専用です。DELETEリクエストは許可されていません。',
+    );
   }
 
   /**

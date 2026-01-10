@@ -38,15 +38,30 @@ export class ConfigManager {
       return this._config;
     }
 
-    // ワークスペース設定ファイルの読み込み
+    // システム環境変数を保存
+    const systemEnv = {
+      BACKLOG_DOMAIN: process.env.BACKLOG_DOMAIN,
+      BACKLOG_API_KEY: process.env.BACKLOG_API_KEY,
+      BACKLOG_DEFAULT_PROJECT: process.env.BACKLOG_DEFAULT_PROJECT,
+      BACKLOG_MAX_RETRIES: process.env.BACKLOG_MAX_RETRIES,
+      BACKLOG_TIMEOUT: process.env.BACKLOG_TIMEOUT,
+    };
+
+    // ワークスペース設定ファイルの読み込み（優先）
     const workspaceConfigPath = join(process.cwd(), '.backlog-mcp.env');
     if (existsSync(workspaceConfigPath)) {
-      config({ path: workspaceConfigPath });
+      config({ path: workspaceConfigPath, override: true });
     }
 
-    // 環境変数から設定を取得
-    const domain = process.env.BACKLOG_DOMAIN;
-    const apiKey = process.env.BACKLOG_API_KEY;
+    // 設定の優先順位処理：ワークスペース設定 > システム環境変数
+    const domain = process.env.BACKLOG_DOMAIN || systemEnv.BACKLOG_DOMAIN;
+    const apiKey = process.env.BACKLOG_API_KEY || systemEnv.BACKLOG_API_KEY;
+    const defaultProject =
+      process.env.BACKLOG_DEFAULT_PROJECT || systemEnv.BACKLOG_DEFAULT_PROJECT;
+    const maxRetries =
+      process.env.BACKLOG_MAX_RETRIES || systemEnv.BACKLOG_MAX_RETRIES || '3';
+    const timeout =
+      process.env.BACKLOG_TIMEOUT || systemEnv.BACKLOG_TIMEOUT || '30000';
 
     if (!domain || !apiKey) {
       throw new Error(
@@ -58,9 +73,9 @@ export class ConfigManager {
     this._config = {
       domain: domain,
       apiKey: apiKey,
-      defaultProject: process.env.BACKLOG_DEFAULT_PROJECT,
-      maxRetries: parseInt(process.env.BACKLOG_MAX_RETRIES || '3', 10),
-      timeout: parseInt(process.env.BACKLOG_TIMEOUT || '30000', 10),
+      defaultProject: defaultProject,
+      maxRetries: parseInt(maxRetries, 10),
+      timeout: parseInt(timeout, 10),
     };
 
     return this._config;

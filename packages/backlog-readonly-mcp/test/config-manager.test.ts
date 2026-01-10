@@ -277,7 +277,10 @@ describe('ConfigManager Property Tests', () => {
       }
 
       // 元のAPIキーが漏洩していないことを確認
-      expect(maskedKey1).not.toBe(apiKey);
+      // もともとAPIキー自体が全て'*'の場合は、マスキング後と同一でも漏洩とはみなさない
+      if (apiKey !== '*'.repeat(apiKey.length)) {
+        expect(maskedKey1).not.toBe(apiKey);
+      }
     });
   });
 });

@@ -5,9 +5,8 @@
  * 優先順位に従って設定を管理します。
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { config } from 'dotenv';
 import type { BacklogConfig } from '../types/index.js';
 
 export class ConfigManager {
@@ -47,21 +46,45 @@ export class ConfigManager {
       BACKLOG_TIMEOUT: process.env.BACKLOG_TIMEOUT,
     };
 
-    // ワークスペース設定ファイルの読み込み（優先）
+    // ワークスペース設定ファイルから設定を読み込み
+    let workspaceConfig: Record<string, string | undefined> = {};
     const workspaceConfigPath = join(process.cwd(), '.backlog-mcp.env');
     if (existsSync(workspaceConfigPath)) {
-      config({ path: workspaceConfigPath, override: true });
+      try {
+        const content = readFileSync(workspaceConfigPath, 'utf-8');
+        const lines = content.split('\n');
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine && !trimmedLine.startsWith('#')) {
+            const [key, ...valueParts] = trimmedLine.split('=');
+            if (key && valueParts.length > 0) {
+              const value = valueParts.join('=').trim();
+              // クォートを除去
+              const cleanValue = value.replace(/^["']|["']$/g, '');
+              workspaceConfig[key.trim()] = cleanValue;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `ワークスペース設定ファイルの読み込みに失敗しました: ${error}`,
+        );
+      }
     }
 
     // 設定の優先順位処理：ワークスペース設定 > システム環境変数
-    const domain = process.env.BACKLOG_DOMAIN || systemEnv.BACKLOG_DOMAIN;
-    const apiKey = process.env.BACKLOG_API_KEY || systemEnv.BACKLOG_API_KEY;
+    const domain = workspaceConfig.BACKLOG_DOMAIN || systemEnv.BACKLOG_DOMAIN;
+    const apiKey = workspaceConfig.BACKLOG_API_KEY || systemEnv.BACKLOG_API_KEY;
     const defaultProject =
-      process.env.BACKLOG_DEFAULT_PROJECT || systemEnv.BACKLOG_DEFAULT_PROJECT;
+      workspaceConfig.BACKLOG_DEFAULT_PROJECT ||
+      systemEnv.BACKLOG_DEFAULT_PROJECT;
     const maxRetries =
-      process.env.BACKLOG_MAX_RETRIES || systemEnv.BACKLOG_MAX_RETRIES || '3';
+      workspaceConfig.BACKLOG_MAX_RETRIES ||
+      systemEnv.BACKLOG_MAX_RETRIES ||
+      '3';
     const timeout =
-      process.env.BACKLOG_TIMEOUT || systemEnv.BACKLOG_TIMEOUT || '30000';
+      workspaceConfig.BACKLOG_TIMEOUT || systemEnv.BACKLOG_TIMEOUT || '30000';
 
     if (!domain || !apiKey) {
       throw new Error(

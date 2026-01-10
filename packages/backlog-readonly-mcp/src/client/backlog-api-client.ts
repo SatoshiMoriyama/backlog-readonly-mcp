@@ -56,21 +56,25 @@ export class BacklogApiClient {
   /**
    * リトライ機能付きでリクエストを実行
    */
-  private async executeWithRetry<T>(
-    requestFn: () => Promise<T>,
-    retryCount = 0,
-  ): Promise<T> {
-    try {
-      return await requestFn();
-    } catch (error) {
-      if (retryCount < this.config.maxRetries && this.shouldRetry(error)) {
-        console.warn(
-          `リクエストが失敗しました。リトライします... (${retryCount + 1}/${this.config.maxRetries})`,
-        );
-        await this.delay(Math.pow(2, retryCount) * 1000); // 指数バックオフ
-        return this.executeWithRetry(requestFn, retryCount + 1);
+  private async executeWithRetry<T>(requestFn: () => Promise<T>): Promise<T> {
+    let attempt = 0;
+
+    // 再帰ではなくループでリトライを行うことで、スタックオーバーフローのリスクを避ける
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        if (attempt < this.config.maxRetries && this.shouldRetry(error)) {
+          console.warn(
+            `リクエストが失敗しました。リトライします... (${attempt + 1}/${this.config.maxRetries})`,
+          );
+          await this.delay(Math.pow(2, attempt) * 1000); // 指数バックオフ
+          attempt += 1;
+          continue;
+        }
+        throw this.convertToBacklogError(error);
       }
-      throw this.convertToBacklogError(error);
     }
   }
 

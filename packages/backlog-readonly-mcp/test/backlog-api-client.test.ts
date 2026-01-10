@@ -96,7 +96,7 @@ describe('BacklogApiClient Property Tests', () => {
 
       // APIレスポンスをモック
       if (config.shouldSucceed) {
-        mockAxiosInstance.get.mockResolvedValueOnce({
+        mockAxiosInstance.get.mockResolvedValue({
           data: { id: 1, userId: 'testuser', name: 'Test User' },
         });
       } else {
@@ -108,7 +108,7 @@ describe('BacklogApiClient Property Tests', () => {
           },
         };
         mockedAxios.isAxiosError.mockReturnValue(true);
-        mockAxiosInstance.get.mockRejectedValueOnce(error);
+        mockAxiosInstance.get.mockRejectedValue(error);
       }
 
       const client = new BacklogApiClient();
@@ -205,7 +205,7 @@ describe('BacklogApiClient Property Tests', () => {
 
     for (const scenario of errorScenarios) {
       mockedAxios.isAxiosError.mockReturnValue(true);
-      mockAxiosInstance.get.mockRejectedValueOnce(scenario.error);
+      mockAxiosInstance.get.mockRejectedValue(scenario.error);
 
       try {
         await client.get('/test-endpoint');
@@ -217,6 +217,10 @@ describe('BacklogApiClient Property Tests', () => {
         expect(typeof error.code).toBe('string');
         expect(typeof error.message).toBe('string');
       }
+
+      // 次のテストのためにモックをリセット
+      vi.clearAllMocks();
+      mockAxiosInstance.get.mockClear();
     }
   });
 

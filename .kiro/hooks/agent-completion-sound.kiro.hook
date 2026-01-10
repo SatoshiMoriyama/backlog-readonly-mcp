@@ -11,5 +11,5 @@
     "command": "afplay /System/Library/Sounds/Ping.aiff"
   },
   "shortName": "agent-completion-sound",
-  "workspaceFolderName": "techblog_workspace"
+  "workspaceFolderName": "backlog-readonly-mcp-blog"
 }

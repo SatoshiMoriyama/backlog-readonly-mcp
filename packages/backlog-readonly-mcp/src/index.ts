@@ -12,6 +12,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ErrorCode,
+  McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
 // 必要なモジュールをインポート
@@ -25,11 +27,32 @@ import { ToolRegistry } from './tools/tool-registry.js';
 async function main() {
   // 設定管理とAPIクライアントの初期化
   const configManager = ConfigManager.getInstance();
-  await configManager.loadConfig();
-  const _apiClient = new BacklogApiClient(configManager);
+  configManager.loadConfig();
+  const apiClient = new BacklogApiClient(configManager);
 
   // ツールレジストリの初期化
   const toolRegistry = new ToolRegistry();
+
+  // 基本的なテストツールを追加
+  toolRegistry.registerTool(
+    {
+      name: 'test_connection',
+      description: 'MCPサーバーの接続をテストします（読み取り専用）',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
+    async () => {
+      return {
+        status: 'success',
+        message: 'Backlog読み取り専用MCPサーバーが正常に動作しています',
+        timestamp: new Date().toISOString(),
+        capabilities: ['read-only', 'projects', 'issues', 'users', 'wikis'],
+      };
+    },
+  );
 
   // TODO: ツールの登録
   // registerProjectTools(toolRegistry, apiClient);
@@ -72,17 +95,10 @@ async function main() {
         ],
       };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
+      if (error instanceof Error) {
+        throw new McpError(ErrorCode.InternalError, error.message);
+      }
+      throw new McpError(ErrorCode.InternalError, 'Unknown error');
     }
   });
 

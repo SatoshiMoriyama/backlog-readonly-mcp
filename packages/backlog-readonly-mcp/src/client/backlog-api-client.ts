@@ -38,9 +38,9 @@ export class BacklogApiClient {
   /**
    * GETリクエストを実行
    */
-  public async get<T = any>(
+  public async get<T = unknown>(
     endpoint: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
   ): Promise<T> {
     try {
       const response: AxiosResponse<T> = await this.axiosInstance.get(
@@ -78,8 +78,11 @@ export class BacklogApiClient {
 
   /**
    * エラーハンドリング
+   *
+   * レート制限(HTTP 429)の場合は待機後に同じリクエストを再送し、
+   * そのレスポンス（AxiosResponse）を返します。それ以外のエラーは再スローします。
    */
-  private async handleError(error: AxiosError): Promise<any> {
+  private async handleError(error: AxiosError): Promise<AxiosResponse> {
     if (error.response?.status === 429) {
       // レート制限の場合
       const retryAfter = parseInt(
@@ -101,7 +104,7 @@ export class BacklogApiClient {
   /**
    * エラーをBacklogErrorに変換
    */
-  private convertToBacklogError(error: any): BacklogError {
+  private convertToBacklogError(error: unknown): BacklogError {
     if (axios.isAxiosError(error)) {
       const response = error.response;
 

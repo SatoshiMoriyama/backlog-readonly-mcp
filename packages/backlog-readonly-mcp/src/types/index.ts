@@ -138,7 +138,7 @@ export interface CustomField {
   applicableIssueTypes: number[];
   allowAddItem: boolean;
   items: CustomFieldItem[];
-  value?: any;
+  value?: string | number | string[] | number[] | null;
 }
 
 export interface CustomFieldItem {
@@ -225,13 +225,35 @@ export interface WikiTag {
 export interface BacklogError {
   code: string;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 export interface MCPError {
   code: number;
   message: string;
-  data?: any;
+  data?: unknown;
+}
+
+/**
+ * シンプルな JSON Schema 型定義
+ *
+ * - 学習用・検証用のため、よく使うプロパティのみに絞っています
+ * - 必要に応じてプロパティを拡張していく想定です
+ */
+export interface JSONSchema {
+  type:
+    | 'string'
+    | 'number'
+    | 'integer'
+    | 'boolean'
+    | 'object'
+    | 'array'
+    | 'null';
+  description?: string;
+  properties?: Record<string, JSONSchema>;
+  items?: JSONSchema;
+  enum?: Array<string | number | boolean | null>;
+  required?: string[];
 }
 
 // ツール関連の型
@@ -240,7 +262,7 @@ export interface ToolDefinition {
   description: string;
   inputSchema: {
     type: 'object';
-    properties: Record<string, any>;
+    properties: Record<string, JSONSchema>;
     required?: string[];
   };
 }

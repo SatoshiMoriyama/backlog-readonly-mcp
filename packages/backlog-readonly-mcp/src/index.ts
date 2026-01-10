@@ -46,7 +46,7 @@ async function main() {
 
   // ツール呼び出しの処理
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const { name, arguments: args } = request.params;
+    const { name, arguments: toolArgs } = request.params;
 
     // TODO: ツール呼び出しの実装
     throw new Error(`Unknown tool: ${name}`);

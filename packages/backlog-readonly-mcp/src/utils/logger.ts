@@ -35,7 +35,7 @@ export class Logger {
    */
   public static warn(message: string, ...args: unknown[]): void {
     if (Logger.level >= LogLevel.WARN) {
-      console.error(`[WARN] ${message}`, ...args);
+      console.warn(`[WARN] ${message}`, ...args);
     }
   }
 
@@ -44,7 +44,7 @@ export class Logger {
    */
   public static info(message: string, ...args: unknown[]): void {
     if (Logger.level >= LogLevel.INFO) {
-      console.error(`[INFO] ${message}`, ...args);
+      console.log(`[INFO] ${message}`, ...args);
     }
   }
 
@@ -53,7 +53,7 @@ export class Logger {
    */
   public static debug(message: string, ...args: unknown[]): void {
     if (Logger.level >= LogLevel.DEBUG) {
-      console.error(`[DEBUG] ${message}`, ...args);
+      console.log(`[DEBUG] ${message}`, ...args);
     }
   }
 }

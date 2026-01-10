@@ -86,7 +86,7 @@ describe('ConfigManager Property Tests', () => {
       },
     ];
 
-    testConfigs.forEach((testConfig, _index) => {
+    testConfigs.forEach((testConfig) => {
       // 環境変数をクリア
       delete process.env.BACKLOG_DOMAIN;
       delete process.env.BACKLOG_API_KEY;
@@ -168,7 +168,7 @@ describe('ConfigManager Property Tests', () => {
       },
     ];
 
-    testCases.forEach((testCase, _index) => {
+    testCases.forEach((testCase) => {
       // 環境変数をクリア
       delete process.env.BACKLOG_DOMAIN;
       delete process.env.BACKLOG_API_KEY;

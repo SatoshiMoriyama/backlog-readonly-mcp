@@ -84,8 +84,8 @@ export class BacklogApiClient {
   private shouldRetry(error: unknown): boolean {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
-      // 5xx系エラーまたは429（レート制限）の場合はリトライ
-      return status === 429 || (status !== undefined && status >= 500);
+      // 5xx系エラー（サーバー側の一時的なエラー）の場合はリトライ
+      return status !== undefined && status >= 500;
     }
     return false;
   }

@@ -60,9 +60,12 @@ export class ConfigManager {
             const [key, ...valueParts] = trimmedLine.split('=');
             if (key && valueParts.length > 0) {
               const value = valueParts.join('=').trim();
-              // クォートを除去
-              const cleanValue = value.replace(/^["']|["']$/g, '');
-              workspaceConfig[key.trim()] = cleanValue;
+              if (value) {
+                // 空文字列でない場合のみ設定
+                // クォートを除去
+                const cleanValue = value.replace(/^["']|["']$/g, '');
+                workspaceConfig[key.trim()] = cleanValue;
+              }
             }
           }
         }

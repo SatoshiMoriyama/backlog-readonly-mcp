@@ -25,7 +25,8 @@ import { ToolRegistry } from './tools/tool-registry.js';
 async function main() {
   // 設定管理とAPIクライアントの初期化
   const configManager = ConfigManager.getInstance();
-  await configManager.loadConfig();
+  configManager.loadConfig();
+  // TODO: 後続のタスクでツール登録時に使用予定
   const _apiClient = new BacklogApiClient(configManager);
 
   // ツールレジストリの初期化

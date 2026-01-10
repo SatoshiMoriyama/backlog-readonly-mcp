@@ -1,7 +1,7 @@
 {
-  "name": "techblog_workspace",
+  "name": "backlog-readonly-mcp-blog",
   "version": "1.0.0",
-  "description": "技術ブログ記事の執筆・校正とコード検証のためのワークスペース",
+  "description": "backlog-readonly-mcpに関する技術ブログ記事の執筆・校正とコード検証のためのワークスペース",
   "main": "index.js",
   "scripts": {
     "lint": "markdownlint-cli2 blog_content/**/*.md && textlint blog_content/**/*.md",

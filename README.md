@@ -1,80 +1,170 @@
-# 技術ブログワークスペース
+# Backlog読み取り専用MCPサーバー
 
-技術ブログ記事の執筆・校正とコード検証のためのワークスペースです。
+> **注意**: このプロジェクトは現在仕様策定段階です。実装はまだ完了していません。
 
-## 使い方
+Backlog の API を利用して、プロジェクト、課題、ユーザー、Wiki などの情報を読み取り専用で提供します。
+Model Context Protocol（MCP）サーバーです。
+セキュリティを重視し、データの変更や作成は一切行いません。
 
-### 新しいブログ記事の開始
+## 特徴
 
-1. このリポジトリをテンプレートとして新しいブログ用リポジトリを作成するか、ローカル環境でこのフォルダ全体を別の場所にコピーして新しい作業ディレクトリを作成
+- **読み取り専用**: データの変更・作成は一切行わず、GET リクエストのみを使用
+- **セキュリティ重視**: API キーの安全な管理とマスキング機能
+- **ワークスペース対応**: プロジェクトごとに異なる設定を自動適用
+- **デフォルトプロジェクト**: よく使うプロジェクトを設定して効率的に作業
+- **包括的なツール**: プロジェクト、課題、ユーザー、Wiki、マスタデータの取得
 
-2. **GitHub Settings Appをインストール**（テンプレートから作成した場合）
+## 公式MCPサーバーとの違い
 
-   新しいリポジトリでPR設定を自動化するため、以下のURLからGitHub Settings Appをインストールしてください：
-   
-   ```
-   https://github.com/apps/settings
-   ```
-   
-   インストール後、`.github/settings.yml`の設定が自動的に適用され、以下が設定されます：
-   - ブランチ保護ルール（レビューコメント解決必須）
-   - マージ設定（Squash mergeのみ、マージ後ブランチ自動削除）
-   - セキュリティ設定（自動修正とアラート有効）
+[nulab 公式の Backlog MCP サーバー](https://github.com/nulab/backlog-mcp-server)と比較して。
 
-3. 依存関係をインストール
+- **読み取り専用に特化**: データ変更機能を一切実装せず、誤操作のリスクを完全に排除
+- **セキュリティ重視**: 最小権限の原則に基づいた設計
+- **監査対応**: 読み取り専用であることが明確で、コンプライアンス要件に対応
 
-3. 依存関係をインストール
+## 提供ツール
+
+### プロジェクト関連
+- `get_projects`: プロジェクト一覧取得
+- `get_project`: プロジェクト詳細取得
+- `get_project_users`: プロジェクトメンバー取得
+
+### 課題関連
+- `get_issues`: 課題一覧取得（検索条件付き）
+- `get_issue`: 課題詳細取得
+- `get_issue_comments`: 課題コメント取得
+- `get_issue_attachments`: 課題添付ファイル取得
+
+### ユーザー関連
+- `get_users`: ユーザー一覧取得
+- `get_user`: ユーザー詳細取得
+- `get_myself`: 自分のユーザー情報取得
+
+### Wiki関連
+- `get_wikis`: Wiki 一覧取得
+- `get_wiki`: 特定 Wiki ページ取得
+
+### マスタデータ関連
+- `get_priorities`: 優先度の一覧取得
+- `get_statuses`: ステータス一覧取得
+- `get_resolutions`: 完了理由の一覧取得
+- `get_categories`: カテゴリ一覧取得
+
+## インストール（実装完了後）
 
 ```bash
-pnpm install
+npm install
+npm run build
 ```
 
-4. セットアップスクリプトを実行
+## 設定
+
+### 環境変数
+
+**必須環境変数**:
+```bash
+export BACKLOG_API_KEY="your-api-key-here"
+export BACKLOG_DOMAIN="your-company.backlog.com"
+```
+
+**オプション環境変数**:
+```bash
+export BACKLOG_DEFAULT_PROJECT="MYPROJ"  # デフォルトプロジェクトキー
+export BACKLOG_MAX_RETRIES="3"           # リトライ回数
+export BACKLOG_TIMEOUT="30000"           # タイムアウト（ms）
+```
+
+### ワークスペース固有の設定
+
+プロジェクトルートに `.backlog-mcp.env` ファイルを配置することで、ワークスペース固有の設定が可能です。
 
 ```bash
-pnpm setup-blog your-blog-name
+# .backlog-mcp.env
+BACKLOG_DOMAIN="your-company.backlog.com"
+BACKLOG_API_KEY="your-api-key-here"
+BACKLOG_DEFAULT_PROJECT="MYPROJ"
 ```
 
-例:
+**注意**: `.backlog-mcp.env` ファイルは `.gitignore` に追加してコミット対象外にしてください。
+
+### MCPクライアント設定
+
+```json
+{
+  "mcpServers": {
+    "backlog-readonly": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+```
+
+## 使用例
+
+### デフォルトプロジェクトの課題を取得
+```typescript
+await callTool("get_issues", {});
+```
+
+### 特定プロジェクトの課題を取得
+```typescript
+await callTool("get_issues", { projectId: "OTHERPROJ" });
+```
+
+### 課題詳細を取得
+```typescript
+await callTool("get_issue", { issueKey: "MYPROJ-123" });
+```
+
+### プロジェクト一覧を取得
+```typescript
+await callTool("get_projects", {});
+```
+
+## 開発（実装完了後）
+
+### 依存関係のインストール
 ```bash
-pnpm setup-blog aws-lambda-tips
+npm install
 ```
 
-5. `blog_content/blog.md` を編集してブログを書く
-
-### 利用可能なコマンド
-
+### 開発サーバーの起動
 ```bash
-# Markdownのlint
-pnpm lint
-
-# Markdownのlint（自動修正）
-pnpm lint:fix
-
-# コードのlint
-pnpm code:lint
-
-# コードのlint（自動修正）
-pnpm code:fix
-
-# CDKデプロイ
-pnpm cdk:deploy
-
-# CDKスタック削除
-pnpm cdk:destroy
+npm run dev
 ```
 
-## 構成
+### テストの実行
+```bash
+npm test
+```
 
-- `blog_content/` - ブログ記事のMarkdownファイル
-- `packages/cdk/` - AWS CDKプロジェクト（サンプルコード用）
-- `.vscode/` - VSCode設定
-- `.kiro/` - Kiro設定とフック
-- `.github/settings.yml` - GitHub Settings App用の自動設定ファイル
+### ビルド
+```bash
+npm run build
+```
+
+## セキュリティ
+
+- API キーは環境変数またはワークスペース設定ファイルで管理
+- ログ出力時に API キーを自動的にマスキング
+- GET リクエストのみを使用し、データ変更は一切行わない
+- 最小限の権限で Backlog API にアクセス
+
+## ライセンス
+
+MIT License
+
+## 貢献
+
+Issue 報告や Pull Request を歓迎します。
 
 ## 注意事項
 
-- セットアップスクリプトは以下を自動更新します：
-  - ルート `package.json` の name と description
-  - CDK プロジェクトの `packages/cdk/package.json` の name
-  - Kiro Hook の workspaceFolderName
+このツールは MIT ライセンスの下で提供され、保証や公式サポートはありません。
+内容を確認し、用途に適しているかを判断した上で、自己責任でご利用ください。
+問題が発生した場合は、GitHub Issues で報告してください。

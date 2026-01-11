@@ -97,10 +97,11 @@ export class ConfigManager {
         );
       }
 
-      // 設定の優先順位処理：ワークスペース設定 > システム環境変数
-      const domain = workspaceConfig.BACKLOG_DOMAIN || systemEnv.BACKLOG_DOMAIN;
+      // 設定の優先順位処理：
+      // 認証情報（要件10.4）は環境変数を優先、その他はワークスペース設定を優先
+      const domain = systemEnv.BACKLOG_DOMAIN || workspaceConfig.BACKLOG_DOMAIN;
       const apiKey =
-        workspaceConfig.BACKLOG_API_KEY || systemEnv.BACKLOG_API_KEY;
+        systemEnv.BACKLOG_API_KEY || workspaceConfig.BACKLOG_API_KEY;
       const defaultProject =
         workspaceConfig.BACKLOG_DEFAULT_PROJECT ||
         systemEnv.BACKLOG_DEFAULT_PROJECT;
@@ -124,45 +125,38 @@ export class ConfigManager {
       const parsedMaxRetries = parseInt(maxRetries, 10);
       const parsedTimeout = parseInt(timeout, 10);
 
-      if (
-        isNaN(parsedMaxRetries) ||
-        parsedMaxRetries < 0 ||
-        parsedMaxRetries > 10
-      ) {
-        logger.warn('リトライ回数が無効です。デフォルト値(3)を使用します', {
-          specified: maxRetries,
-          default: 3,
-        });
-      }
+      // 検証ヘルパー関数
+      const validateMaxRetries = (value: number): number => {
+        if (Number.isNaN(value) || value < 0 || value > 10) {
+          logger.warn('リトライ回数が無効です。デフォルト値(3)を使用します', {
+            specified: maxRetries,
+            default: 3,
+          });
+          return 3;
+        }
+        return value;
+      };
 
-      if (
-        isNaN(parsedTimeout) ||
-        parsedTimeout < 1000 ||
-        parsedTimeout > 300000
-      ) {
-        logger.warn(
-          'タイムアウト値が無効です。デフォルト値(30000ms)を使用します',
-          {
-            specified: timeout,
-            default: 30000,
-          },
-        );
-      }
+      const validateTimeout = (value: number): number => {
+        if (Number.isNaN(value) || value < 1000 || value > 300000) {
+          logger.warn(
+            'タイムアウト値が無効です。デフォルト値(30000ms)を使用します',
+            {
+              specified: timeout,
+              default: 30000,
+            },
+          );
+          return 30000;
+        }
+        return value;
+      };
 
       this._config = {
         domain: domain,
         apiKey: apiKey,
         defaultProject: defaultProject,
-        maxRetries:
-          isNaN(parsedMaxRetries) ||
-          parsedMaxRetries < 0 ||
-          parsedMaxRetries > 10
-            ? 3
-            : parsedMaxRetries,
-        timeout:
-          isNaN(parsedTimeout) || parsedTimeout < 1000 || parsedTimeout > 300000
-            ? 30000
-            : parsedTimeout,
+        maxRetries: validateMaxRetries(parsedMaxRetries),
+        timeout: validateTimeout(parsedTimeout),
       };
 
       logger.info('設定の読み込みが完了しました', {

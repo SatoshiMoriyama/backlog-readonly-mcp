@@ -97,7 +97,7 @@ TypeScript と Node.js を使用して Backlog 読み取り専用 MCP サーバ�
 
   - [x] 6.2 Wiki 関連ツールの実装
     - get_wikis: Wiki 一覧取得
-    - get_Wiki: 特定 Wiki ページ取得
+    - get_wiki: 特定 Wiki ページ取得
     - _要件: 9.4_
 
   - [x] 6.3 マスタデータ関連ツールの実装

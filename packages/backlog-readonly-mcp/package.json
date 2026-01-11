@@ -2,17 +2,28 @@
   "name": "backlog-readonly-mcp",
   "version": "1.0.0",
   "description": "Backlog読み取り専用MCPサーバー",
-  "main": "dist/index.js",
+  "bin": {
+    "backlog-readonly-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "MCP_CLIENT_SETUP.md",
+    ".backlog-mcp.env.example"
+  ],
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && tsc",
+    "build:prod": "npm run clean && tsc --project tsconfig.prod.json",
+    "clean": "rm -rf dist",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "vitest --run",
     "test:watch": "vitest",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "inspector": "npx @modelcontextprotocol/inspector dist/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
+    "prepublishOnly": "npm run build:prod && npm test"
   },
   "keywords": [
     "mcp",
@@ -20,8 +31,16 @@
     "readonly",
     "api"
   ],
-  "author": "",
+  "author": "Backlog MCP Team",
   "license": "MIT",
+  "homepage": "https://github.com/SatoshiMoriyama/backlog-readonly-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SatoshiMoriyama/backlog-readonly-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SatoshiMoriyama/backlog-readonly-mcp/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "axios": "^1.7.0",

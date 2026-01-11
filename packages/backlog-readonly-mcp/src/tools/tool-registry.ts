@@ -185,7 +185,7 @@ export class ToolRegistry {
         const lowerKey = key.toLowerCase();
         return writeParams.some((writeParam) => {
           return (
-            lowerKey === writeParam || lowerKey.startsWith(writeParam + '_')
+            lowerKey === writeParam || lowerKey.startsWith(`${writeParam}_`)
           );
         });
       });

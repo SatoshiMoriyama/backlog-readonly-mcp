@@ -14,7 +14,6 @@ import { ConfigManager } from '../config/config-manager.js';
 import {
   AuthenticationError,
   type BacklogConfig,
-  type BacklogError,
   NetworkError,
   ReadOnlyViolationError,
 } from '../types/index.js';
@@ -262,7 +261,7 @@ export class BacklogApiClient {
       if (response) {
         // APIエラーレスポンス
         const backlogError = response.data;
-        const errorCode =
+        const _errorCode =
           backlogError?.errors?.[0]?.code || `HTTP_${response.status}`;
         const errorMessage = this.createUserFriendlyMessage(
           response.status,

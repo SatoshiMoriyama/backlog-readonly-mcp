@@ -97,10 +97,11 @@ export class ConfigManager {
         );
       }
 
-      // 設定の優先順位処理：ワークスペース設定 > システム環境変数
-      const domain = workspaceConfig.BACKLOG_DOMAIN || systemEnv.BACKLOG_DOMAIN;
+      // 設定の優先順位処理：
+      // 認証情報（要件10.4）は環境変数を優先、その他はワークスペース設定を優先
+      const domain = systemEnv.BACKLOG_DOMAIN || workspaceConfig.BACKLOG_DOMAIN;
       const apiKey =
-        workspaceConfig.BACKLOG_API_KEY || systemEnv.BACKLOG_API_KEY;
+        systemEnv.BACKLOG_API_KEY || workspaceConfig.BACKLOG_API_KEY;
       const defaultProject =
         workspaceConfig.BACKLOG_DEFAULT_PROJECT ||
         systemEnv.BACKLOG_DEFAULT_PROJECT;
@@ -125,7 +126,7 @@ export class ConfigManager {
       const parsedTimeout = parseInt(timeout, 10);
 
       if (
-        isNaN(parsedMaxRetries) ||
+        Number.isNaN(parsedMaxRetries) ||
         parsedMaxRetries < 0 ||
         parsedMaxRetries > 10
       ) {
@@ -136,7 +137,7 @@ export class ConfigManager {
       }
 
       if (
-        isNaN(parsedTimeout) ||
+        Number.isNaN(parsedTimeout) ||
         parsedTimeout < 1000 ||
         parsedTimeout > 300000
       ) {
@@ -154,13 +155,15 @@ export class ConfigManager {
         apiKey: apiKey,
         defaultProject: defaultProject,
         maxRetries:
-          isNaN(parsedMaxRetries) ||
+          Number.isNaN(parsedMaxRetries) ||
           parsedMaxRetries < 0 ||
           parsedMaxRetries > 10
             ? 3
             : parsedMaxRetries,
         timeout:
-          isNaN(parsedTimeout) || parsedTimeout < 1000 || parsedTimeout > 300000
+          Number.isNaN(parsedTimeout) ||
+          parsedTimeout < 1000 ||
+          parsedTimeout > 300000
             ? 30000
             : parsedTimeout,
       };

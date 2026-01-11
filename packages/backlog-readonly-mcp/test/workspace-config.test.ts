@@ -83,8 +83,10 @@ describe('Workspace Configuration Tests', () => {
     const config = manager.loadConfig();
 
     // カスタム設定ファイルの値が使用されることを確認
-    expect(config.domain).toBe('custom.backlog.com');
-    expect(config.apiKey).toBe('custom-api-key');
+    // 認証情報は環境変数を優先（要件10.4）
+    expect(config.domain).toBe('system.backlog.com');
+    expect(config.apiKey).toBe('system-api-key');
+    // その他の設定はカスタム設定ファイルを優先
     expect(config.defaultProject).toBe('CUSTOM');
     expect(config.maxRetries).toBe(5);
     expect(config.timeout).toBe(45000);
@@ -149,6 +151,8 @@ describe('Workspace Configuration Tests', () => {
     ].join('\n');
     writeFileSync(defaultConfigPath, workspaceConfig);
 
+    // ConfigManagerをリセットして新しい設定を読み込み
+    ConfigManager.getInstance().reset();
     const manager = ConfigManager.getInstance();
     const config = manager.loadConfig();
 

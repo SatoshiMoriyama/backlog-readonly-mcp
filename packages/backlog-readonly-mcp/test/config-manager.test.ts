@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ConfigManager } from '../src/config/config-manager.js';
 
 describe('ConfigManager Property Tests', () => {
-  const testConfigPath = join(process.cwd(), '.backlog-mcp.env');
+  const testConfigPath = '.backlog-mcp.env';
   let originalEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
@@ -193,15 +193,20 @@ describe('ConfigManager Property Tests', () => {
         .join('\n');
       writeFileSync(testConfigPath, configContent);
 
-      // BACKLOG_CONFIG_PATH環境変数を設定してテスト用設定ファイルを指定
-      process.env.BACKLOG_CONFIG_PATH = testConfigPath;
-
+      // ConfigManagerを再度リセットして新しい設定を読み込み
+      ConfigManager.getInstance().reset();
       const manager = ConfigManager.getInstance();
       const config = manager.loadConfig();
 
-      // ワークスペース設定が優先されることを検証
-      expect(config.domain).toBe(testCase.workspaceConfig.BACKLOG_DOMAIN);
-      expect(config.apiKey).toBe(testCase.workspaceConfig.BACKLOG_API_KEY);
+      // 認証情報は環境変数を優先（要件10.4）、その他はワークスペース設定を優先
+      expect(config.domain).toBe(
+        testCase.systemEnv.BACKLOG_DOMAIN ||
+          testCase.workspaceConfig.BACKLOG_DOMAIN,
+      );
+      expect(config.apiKey).toBe(
+        testCase.systemEnv.BACKLOG_API_KEY ||
+          testCase.workspaceConfig.BACKLOG_API_KEY,
+      );
       expect(config.defaultProject).toBe(
         testCase.workspaceConfig.BACKLOG_DEFAULT_PROJECT,
       );
@@ -227,10 +232,9 @@ describe('ConfigManager Property Tests', () => {
       }
 
       // テスト用設定ファイルを削除
-      unlinkSync(testConfigPath);
-
-      // BACKLOG_CONFIG_PATH環境変数をクリア
-      delete process.env.BACKLOG_CONFIG_PATH;
+      if (existsSync(testConfigPath)) {
+        unlinkSync(testConfigPath);
+      }
     });
   });
 

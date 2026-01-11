@@ -103,7 +103,7 @@ const mockAttachment: Attachment = {
   created: '2024-01-01T00:00:00Z',
 };
 
-describe('Issue Tools', () => {
+describe('課題ツール', () => {
   let toolRegistry: ToolRegistry;
   let mockApiClient: BacklogApiClient;
   let mockConfigManager: ConfigManager;

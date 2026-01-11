@@ -192,7 +192,8 @@ export class BacklogApiClient {
     // その他のエラー
     return {
       code: 'UNKNOWN_ERROR',
-      message: error.message || '不明なエラーが発生しました。',
+      message:
+        error instanceof Error ? error.message : '不明なエラーが発生しました。',
       details: error,
     };
   }

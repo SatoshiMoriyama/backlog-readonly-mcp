@@ -6,6 +6,14 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ToolRegistry } from '../src/tools/tool-registry.js';
 
+// テスト用の型定義
+interface TestConnectionResult {
+  status: string;
+  message: string;
+  timestamp: string;
+  capabilities: string[];
+}
+
 describe('MCP Server Basic Functionality', () => {
   let toolRegistry: ToolRegistry;
 
@@ -59,12 +67,15 @@ describe('MCP Server Basic Functionality', () => {
   });
 
   it('should execute test_connection tool successfully', async () => {
-    const result = await toolRegistry.executeTool('test_connection', {});
+    const result = (await toolRegistry.executeTool(
+      'test_connection',
+      {},
+    )) as TestConnectionResult;
 
     expect(result).toHaveProperty('status', 'success');
     expect(result).toHaveProperty('message');
     expect(result).toHaveProperty('capabilities');
-    expect((result as any).capabilities).toContain('read-only');
+    expect(result.capabilities).toContain('read-only');
   });
 
   it('should throw error for unknown tool', async () => {

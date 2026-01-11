@@ -28,7 +28,7 @@ async function main() {
   // 設定管理とAPIクライアントの初期化
   const configManager = ConfigManager.getInstance();
   configManager.loadConfig();
-  const apiClient = new BacklogApiClient(configManager);
+  const _apiClient = new BacklogApiClient(configManager);
 
   // ツールレジストリの初期化
   const toolRegistry = new ToolRegistry();

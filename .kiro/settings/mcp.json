@@ -20,7 +20,8 @@
       },
       "disabled": false,
       "autoApprove": [
-        "test_connection"
+        "test_connection",
+        "get_default_project"
       ]
     }
   }

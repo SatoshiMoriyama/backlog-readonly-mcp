@@ -203,7 +203,12 @@ describe('Workspace Configuration Tests', () => {
    * 要件 10.6: 設定ファイルの形式として.envファイル形式をサポートする
    */
   it('should support .env file format', () => {
-    // システム環境変数を設定
+    // 環境変数を完全にクリア
+    delete process.env.BACKLOG_DEFAULT_PROJECT;
+    delete process.env.BACKLOG_MAX_RETRIES;
+    delete process.env.BACKLOG_TIMEOUT;
+
+    // システム環境変数を設定（認証情報のみ）
     process.env.BACKLOG_DOMAIN = 'test.backlog.com';
     process.env.BACKLOG_API_KEY = 'test-api-key';
 
@@ -220,6 +225,8 @@ describe('Workspace Configuration Tests', () => {
     ].join('\n');
     writeFileSync(defaultConfigPath, envConfig);
 
+    // ConfigManagerを完全にリセット
+    ConfigManager.getInstance().reset();
     const manager = ConfigManager.getInstance();
     const config = manager.loadConfig();
 

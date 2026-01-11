@@ -11,17 +11,17 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
-  ListToolsRequestSchema,
   ErrorCode,
+  ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
 // 必要なモジュールをインポート
 import { BacklogApiClient } from './client/backlog-api-client.js';
 import { ConfigManager } from './config/config-manager.js';
-import { ToolRegistry } from './tools/tool-registry.js';
-import { registerProjectTools } from './tools/project-tools.js';
 import { registerIssueTools } from './tools/issue-tools.js';
+import { registerProjectTools } from './tools/project-tools.js';
+import { ToolRegistry } from './tools/tool-registry.js';
 
 /**
  * MCPサーバーのメイン関数

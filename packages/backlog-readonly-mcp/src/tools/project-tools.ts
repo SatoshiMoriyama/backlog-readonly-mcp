@@ -5,9 +5,9 @@
  */
 
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
-import type { ToolRegistry } from './tool-registry.js';
-import type { BacklogProject, BacklogUser } from '../types/index.js';
 import { ConfigManager } from '../config/config-manager.js';
+import type { BacklogProject, BacklogUser } from '../types/index.js';
+import type { ToolRegistry } from './tool-registry.js';
 
 /**
  * プロジェクト関連ツールを登録します

@@ -5,13 +5,13 @@
  */
 
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
-import type { ToolRegistry } from './tool-registry.js';
-import type {
-  BacklogIssue,
-  BacklogComment,
-  Attachment,
-} from '../types/index.js';
 import { ConfigManager } from '../config/config-manager.js';
+import type {
+  Attachment,
+  BacklogComment,
+  BacklogIssue,
+} from '../types/index.js';
+import type { ToolRegistry } from './tool-registry.js';
 
 /**
  * 課題関連ツールを登録します

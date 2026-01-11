@@ -48,9 +48,14 @@ export class ConfigManager {
     // ワークスペース設定ファイルから設定を読み込み
     const workspaceConfig: Record<string, string | undefined> = {};
 
-    // BACKLOG_CONFIG_PATH環境変数で指定されたファイルを読み込み
-    const configPath = process.env.BACKLOG_CONFIG_PATH;
-    if (configPath && existsSync(configPath)) {
+    // BACKLOG_CONFIG_PATH環境変数で指定されたファイル、なければデフォルトの .backlog-mcp.env を読み込み
+    const envConfigPath = process.env.BACKLOG_CONFIG_PATH;
+    const configPath =
+      envConfigPath && envConfigPath.trim().length > 0
+        ? envConfigPath
+        : '.backlog-mcp.env';
+
+    if (existsSync(configPath)) {
       try {
         const content = readFileSync(configPath, 'utf-8');
         const lines = content.split('\n');

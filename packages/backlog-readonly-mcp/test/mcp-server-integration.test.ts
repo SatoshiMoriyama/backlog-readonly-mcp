@@ -198,7 +198,7 @@ describe('MCPサーバー統合テスト', () => {
     it('存在しないツールの実行でエラーが発生する', async () => {
       await expect(
         toolRegistry.executeTool('non_existent_tool', {}),
-      ).rejects.toThrow('Unknown tool: non_existent_tool');
+      ).rejects.toThrow('存在しないツール: non_existent_tool');
     });
   });
 

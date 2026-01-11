@@ -184,11 +184,8 @@ export class ToolRegistry {
       const hasWriteParam = Object.keys(args).some((key) => {
         const lowerKey = key.toLowerCase();
         return writeParams.some((writeParam) => {
-          // 完全一致または先頭一致をチェック（update_time等の誤検出を防ぐ）
           return (
-            lowerKey === writeParam ||
-            lowerKey.startsWith(writeParam + '_') ||
-            lowerKey.startsWith(writeParam)
+            lowerKey === writeParam || lowerKey.startsWith(writeParam + '_')
           );
         });
       });

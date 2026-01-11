@@ -195,8 +195,20 @@ async function main() {
       config: apiClient.getConfigInfo(),
     });
   } catch (error) {
-    logger.logError('サーバー起動中にエラーが発生しました', error);
-    process.exit(1);
+    // エラーの種類に応じて適切なログメッセージと終了コードを設定
+    if (error instanceof AuthenticationError) {
+      logger.error(`認証エラー: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof NetworkError) {
+      logger.error(`ネットワークエラー: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof ReadOnlyViolationError) {
+      logger.error(`読み取り専用制限違反: ${error.message}`);
+      process.exit(1);
+    } else {
+      logger.logError('サーバー起動中にエラーが発生しました', error);
+      process.exit(1);
+    }
   }
 }
 

@@ -2,13 +2,13 @@
  * MCPサーバー統合テスト
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BacklogApiClient } from '../src/client/backlog-api-client.js';
 import { ConfigManager } from '../src/config/config-manager.js';
-import { ToolRegistry } from '../src/tools/tool-registry.js';
-import { registerProjectTools } from '../src/tools/project-tools.js';
 import { registerIssueTools } from '../src/tools/issue-tools.js';
-import type { BacklogProject, BacklogIssue } from '../src/types/index.js';
+import { registerProjectTools } from '../src/tools/project-tools.js';
+import { ToolRegistry } from '../src/tools/tool-registry.js';
+import type { BacklogIssue, BacklogProject } from '../src/types/index.js';
 
 // モックデータ
 const mockProject: BacklogProject = {

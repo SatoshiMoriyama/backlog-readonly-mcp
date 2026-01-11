@@ -8,9 +8,20 @@
     "lint:fix": "markdownlint-cli2 --fix blog_content/**/*.md && textlint --fix blog_content/**/*.md",
     "code:lint": "biome check packages/",
     "code:fix": "biome check --write packages/",
-    "cdk:deploy": "pnpm --filter cdk deploy",
-    "cdk:destroy": "pnpm --filter cdk destroy",
-    "setup-blog": "node scripts/setup-blog.js"
+    "test": "pnpm -r test",
+    "test:mcp": "pnpm --filter backlog-readonly-mcp test",
+    "test:cdk": "pnpm --filter backlog-readonly-mcp-cdk test",
+    "build": "pnpm -r build",
+    "build:mcp": "pnpm --filter backlog-readonly-mcp build",
+    "build:cdk": "pnpm --filter backlog-readonly-mcp-cdk build",
+    "dev:mcp": "pnpm --filter backlog-readonly-mcp dev",
+    "watch:cdk": "pnpm --filter backlog-readonly-mcp-cdk watch",
+    "cdk:deploy": "pnpm --filter backlog-readonly-mcp-cdk deploy",
+    "cdk:destroy": "pnpm --filter backlog-readonly-mcp-cdk destroy",
+    "cdk:synth": "pnpm --filter backlog-readonly-mcp-cdk synth",
+    "cdk:diff": "pnpm --filter backlog-readonly-mcp-cdk diff",
+    "setup-blog": "node scripts/setup-blog.js",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +41,7 @@
   },
   "lint-staged": {
     "packages/**/*.{js,ts,jsx,tsx,json}": [
-      "biome check"
+      "pnpm run code:lint"
     ],
     "blog_content/**/*.md": [
       "markdownlint-cli2",

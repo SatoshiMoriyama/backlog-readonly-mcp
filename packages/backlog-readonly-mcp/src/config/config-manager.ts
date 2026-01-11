@@ -6,7 +6,6 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { BacklogConfig } from '../types/index.js';
 
 export class ConfigManager {
@@ -48,10 +47,17 @@ export class ConfigManager {
 
     // ワークスペース設定ファイルから設定を読み込み
     const workspaceConfig: Record<string, string | undefined> = {};
-    const workspaceConfigPath = join(process.cwd(), '.backlog-mcp.env');
-    if (existsSync(workspaceConfigPath)) {
+
+    // BACKLOG_CONFIG_PATH環境変数で指定されたファイル、なければデフォルトの .backlog-mcp.env を読み込み
+    const envConfigPath = process.env.BACKLOG_CONFIG_PATH;
+    const configPath =
+      envConfigPath && envConfigPath.trim().length > 0
+        ? envConfigPath
+        : '.backlog-mcp.env';
+
+    if (existsSync(configPath)) {
       try {
-        const content = readFileSync(workspaceConfigPath, 'utf-8');
+        const content = readFileSync(configPath, 'utf-8');
         const lines = content.split('\n');
 
         for (const line of lines) {

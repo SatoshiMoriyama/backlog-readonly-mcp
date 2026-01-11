@@ -2,15 +2,15 @@
  * 課題ツールのテスト
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BacklogApiClient } from '../src/client/backlog-api-client.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { BacklogApiClient } from '../src/client/backlog-api-client.js';
 import { ConfigManager } from '../src/config/config-manager.js';
-import { ToolRegistry } from '../src/tools/tool-registry.js';
 import { registerIssueTools } from '../src/tools/issue-tools.js';
+import { ToolRegistry } from '../src/tools/tool-registry.js';
 import type {
-  BacklogIssue,
-  BacklogComment,
   Attachment,
+  BacklogComment,
+  BacklogIssue,
 } from '../src/types/index.js';
 
 // モックデータ

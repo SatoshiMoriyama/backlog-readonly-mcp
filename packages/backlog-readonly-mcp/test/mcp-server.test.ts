@@ -2,8 +2,8 @@
  * MCPサーバーの基本動作テスト
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { ToolRegistry } from '../src/tools/tool-registry.js';
 
 // テスト用の型定義

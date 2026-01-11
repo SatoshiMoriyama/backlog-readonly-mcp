@@ -243,6 +243,6 @@ MIT License
 
 ## サポート
 
-- [GitHub Issues](https://github.com/your-org/backlog-readonly-mcp/issues)
+- [GitHub Issues](https://github.com/SatoshiMoriyama/backlog-readonly-mcp/issues)
 - [Backlog API ドキュメント](https://developer.nulab.com/docs/backlog/)
 - [MCP プロトコル仕様](https://modelcontextprotocol.io/)

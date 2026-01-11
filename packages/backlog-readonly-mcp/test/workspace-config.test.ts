@@ -124,7 +124,13 @@ describe('Workspace Configuration Tests', () => {
     process.env.BACKLOG_API_KEY = 'test-api-key';
     process.env.BACKLOG_DEFAULT_PROJECT = 'DEFAULT_PROJ';
 
+    // ワークスペース設定ファイルが存在しないことを確認
+    if (existsSync(defaultConfigPath)) {
+      unlinkSync(defaultConfigPath);
+    }
+
     const manager = ConfigManager.getInstance();
+    manager.reset(); // 確実にリセット
     manager.loadConfig();
 
     // プロジェクトIDを省略した場合、デフォルトプロジェクトが使用されることを確認

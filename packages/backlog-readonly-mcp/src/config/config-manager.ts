@@ -136,4 +136,38 @@ export class ConfigManager {
   public reset(): void {
     this._config = null;
   }
+
+  /**
+   * デフォルトプロジェクトが設定されているかチェック
+   */
+  public hasDefaultProject(): boolean {
+    const config = this.getConfig();
+    return !!config.defaultProject;
+  }
+
+  /**
+   * デフォルトプロジェクトキーを取得
+   */
+  public getDefaultProject(): string | undefined {
+    const config = this.getConfig();
+    return config.defaultProject;
+  }
+
+  /**
+   * プロジェクトIDまたはキーを解決（デフォルトプロジェクト機能付き）
+   */
+  public resolveProjectIdOrKey(projectIdOrKey?: string): string {
+    if (projectIdOrKey) {
+      return projectIdOrKey;
+    }
+
+    const defaultProject = this.getDefaultProject();
+    if (!defaultProject) {
+      throw new Error(
+        'プロジェクトIDまたはキーが指定されておらず、デフォルトプロジェクトも設定されていません。',
+      );
+    }
+
+    return defaultProject;
+  }
 }

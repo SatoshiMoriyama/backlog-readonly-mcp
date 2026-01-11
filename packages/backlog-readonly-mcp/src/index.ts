@@ -20,6 +20,7 @@ import {
 import { BacklogApiClient } from './client/backlog-api-client.js';
 import { ConfigManager } from './config/config-manager.js';
 import { ToolRegistry } from './tools/tool-registry.js';
+import { registerProjectTools } from './tools/project-tools.js';
 
 /**
  * MCPサーバーのメイン関数
@@ -28,7 +29,7 @@ async function main() {
   // 設定管理とAPIクライアントの初期化
   const configManager = ConfigManager.getInstance();
   configManager.loadConfig();
-  const _apiClient = new BacklogApiClient(configManager);
+  const apiClient = new BacklogApiClient(configManager);
 
   // ツールレジストリの初期化
   const toolRegistry = new ToolRegistry();
@@ -54,8 +55,10 @@ async function main() {
     },
   );
 
-  // TODO: ツールの登録
-  // registerProjectTools(toolRegistry, apiClient);
+  // プロジェクト関連ツールの登録
+  registerProjectTools(toolRegistry, apiClient);
+
+  // TODO: その他のツールの登録
   // registerIssueTools(toolRegistry, apiClient);
   // registerUserTools(toolRegistry, apiClient);
   // registerWikiTools(toolRegistry, apiClient);

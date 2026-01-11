@@ -142,3 +142,17 @@ BacklogのAPIを利用して、プロジェクト、課題、ユーザー情報�
 6. WHEN 各ツールが呼び出されたとき、THE MCP_Server SHALL 適切なBacklog APIエンドポイントにGETリクエストを送信する
 
 7. THE MCP_Server SHALL 各ツールの説明に「読み取り専用」であることを明記する
+
+### 要件 10: ワークスペース固有設定
+
+**ユーザーストーリー:** 複数のプロジェクトで作業する開発者として、ワークスペースごとに異なるBacklogプロジェクトをデフォルトとして設定したい。これにより、プロジェクト切り替え時の設定変更が不要になる。
+
+#### 受け入れ基準
+
+1. THE MCP_Server SHALL BACKLOG_CONFIG_PATH環境変数で指定されたファイルから設定を読み込む
+2. WHEN ワークスペース固有の設定ファイルが存在するとき、THE MCP_Server SHALL そのファイルからBACKLOG_DEFAULT_PROJECTを読み込む
+3. WHEN デフォルトプロジェクトが設定されているとき、THE MCP_Server SHALL プロジェクトIDを省略した課題取得でそのプロジェクトを使用する
+4. THE MCP_Server SHALL 認証情報（BACKLOG_DOMAIN、BACKLOG_API_KEY）は環境変数から取得する
+5. WHEN 設定ファイルが存在しないとき、THE MCP_Server SHALL 環境変数のみを使用して動作する
+6. THE MCP_Server SHALL 設定ファイルの形式として.envファイル形式をサポートする
+7. WHEN 無効な設定ファイルが指定されたとき、THE MCP_Server SHALL 適切なエラーメッセージを返す

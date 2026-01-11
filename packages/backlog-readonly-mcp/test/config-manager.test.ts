@@ -5,12 +5,25 @@
  * 検証対象: 要件 1.4
  */
 
-import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ConfigManager } from '../src/config/config-manager.js';
 
+// テストファイルのディレクトリを基準にする（process.cwd()に依存しない）
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const testTempDir = join(__dirname, '.test-temp-config');
+
 describe('ConfigManager Property Tests', () => {
-  const testConfigPath = '.backlog-mcp.env';
+  const testConfigPath = join(testTempDir, '.backlog-mcp.env');
   let originalEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
@@ -27,10 +40,18 @@ describe('ConfigManager Property Tests', () => {
     // ConfigManagerをリセット
     ConfigManager.getInstance().reset();
 
+    // テスト用一時ディレクトリを作成
+    if (!existsSync(testTempDir)) {
+      mkdirSync(testTempDir, { recursive: true });
+    }
+
     // テスト用設定ファイルが存在する場合は削除
     if (existsSync(testConfigPath)) {
       unlinkSync(testConfigPath);
     }
+
+    // デフォルトで存在しないパスを指定して、実際のワークスペース設定ファイルの影響を回避
+    process.env.BACKLOG_CONFIG_PATH = join(testTempDir, '.backlog-mcp.env');
   });
 
   afterEach(() => {
@@ -43,9 +64,9 @@ describe('ConfigManager Property Tests', () => {
       }
     });
 
-    // テスト用設定ファイルを削除
-    if (existsSync(testConfigPath)) {
-      unlinkSync(testConfigPath);
+    // テスト用一時ディレクトリを削除
+    if (existsSync(testTempDir)) {
+      rmSync(testTempDir, { recursive: true, force: true });
     }
 
     // ConfigManagerをリセット
@@ -94,8 +115,8 @@ describe('ConfigManager Property Tests', () => {
       delete process.env.BACKLOG_MAX_RETRIES;
       delete process.env.BACKLOG_TIMEOUT;
 
-      // ワークスペース設定ファイルの影響を避けるため、存在しないパスを指定
-      process.env.BACKLOG_CONFIG_PATH = '/tmp/non-existent-config-for-test';
+      // ワークスペース設定ファイルの影響を避けるため、テスト用一時ディレクトリのパスを指定
+      process.env.BACKLOG_CONFIG_PATH = testConfigPath;
 
       // ConfigManagerをリセット
       ConfigManager.getInstance().reset();

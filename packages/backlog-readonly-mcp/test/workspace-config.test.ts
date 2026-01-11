@@ -4,14 +4,26 @@
  * 要件 10.1, 10.2, 10.3 の検証
  */
 
-import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ConfigManager } from '../src/config/config-manager.js';
 
+// テストファイルのディレクトリを基準にする（process.cwd()に依存しない）
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const testTempDir = join(__dirname, '.test-temp');
+
 describe('Workspace Configuration Tests', () => {
-  const testConfigPath = join(process.cwd(), '.backlog-mcp.env.test');
-  const defaultConfigPath = join(process.cwd(), '.backlog-mcp.env');
+  const testConfigPath = join(testTempDir, '.backlog-mcp.env.test');
+  const defaultConfigPath = join(testTempDir, '.backlog-mcp.env');
   let originalEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
@@ -28,12 +40,20 @@ describe('Workspace Configuration Tests', () => {
     // ConfigManagerをリセット
     ConfigManager.getInstance().reset();
 
+    // テスト用一時ディレクトリを作成
+    if (!existsSync(testTempDir)) {
+      mkdirSync(testTempDir, { recursive: true });
+    }
+
     // テスト用設定ファイルが存在する場合は削除
     [testConfigPath, defaultConfigPath].forEach((path) => {
       if (existsSync(path)) {
         unlinkSync(path);
       }
     });
+
+    // デフォルトで存在しないパスを指定して、実際のワークスペース設定ファイルの影響を回避
+    process.env.BACKLOG_CONFIG_PATH = join(testTempDir, '.backlog-mcp.env');
   });
 
   afterEach(() => {
@@ -46,12 +66,10 @@ describe('Workspace Configuration Tests', () => {
       }
     });
 
-    // テスト用設定ファイルを削除
-    [testConfigPath, defaultConfigPath].forEach((path) => {
-      if (existsSync(path)) {
-        unlinkSync(path);
-      }
-    });
+    // テスト用一時ディレクトリを削除
+    if (existsSync(testTempDir)) {
+      rmSync(testTempDir, { recursive: true, force: true });
+    }
 
     // ConfigManagerをリセット
     ConfigManager.getInstance().reset();

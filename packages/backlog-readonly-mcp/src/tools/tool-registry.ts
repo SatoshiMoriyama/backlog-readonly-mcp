@@ -118,7 +118,6 @@ export class ToolRegistry {
       '編集',
       '変更',
       '削除',
-      '削除',
       'create',
       'add',
       'update',

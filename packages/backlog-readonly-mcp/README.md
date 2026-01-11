@@ -10,7 +10,15 @@ Backlog API を利用して、プロジェクト、課題、ユーザー情報�
 - 🔑 **セキュア**: API キーの安全な管理とマスキング機能
 - 📊 **包括的エラーハンドリング**: 詳細なログとユーザーフレンドリーなエラーメッセージ
 
-## インストール
+## 使用方法
+
+### 推奨：npxで直接実行（インストール不要）
+
+```bash
+npx backlog-readonly-mcp
+```
+
+### グローバルインストール（継続的に使用する場合）
 
 ```bash
 npm install -g backlog-readonly-mcp
@@ -50,7 +58,8 @@ BACKLOG_TIMEOUT="30000"
 {
   "mcpServers": {
     "backlog-readonly": {
-      "command": "backlog-readonly-mcp",
+      "command": "npx",
+      "args": ["backlog-readonly-mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -65,7 +74,8 @@ BACKLOG_TIMEOUT="30000"
 {
   "cline.mcpServers": {
     "backlog-readonly": {
-      "command": "backlog-readonly-mcp",
+      "command": "npx",
+      "args": ["backlog-readonly-mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -80,7 +90,8 @@ BACKLOG_TIMEOUT="30000"
 {
   "mcpServers": {
     "backlog-readonly": {
-      "command": "backlog-readonly-mcp",
+      "command": "npx",
+      "args": ["backlog-readonly-mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -196,7 +207,7 @@ await callTool("get_issues", {
 詳細なログを確認したい場合：
 
 ```bash
-DEBUG=backlog-mcp:* backlog-readonly-mcp
+DEBUG=backlog-mcp:* npx backlog-readonly-mcp
 ```
 
 ## 開発

@@ -1,6 +1,6 @@
 {
   "name": "backlog-readonly-mcp",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Backlog読み取り専用MCPサーバー",
   "bin": {
     "backlog-readonly-mcp": "./dist/index.js"

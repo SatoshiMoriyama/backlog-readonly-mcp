@@ -7,6 +7,17 @@
         "aws___search_documentation",
         "aws___read_documentation"
       ]
+    },
+    "backlog-readonly": {
+      "command": "node",
+      "args": ["packages/backlog-readonly-mcp/dist/index.js"],
+      "env": {
+        "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",
+        "BACKLOG_API_KEY": "${BACKLOG_API_KEY}",
+        "BACKLOG_CONFIG_PATH": "${workspaceFolder}/.backlog-mcp.env"
+      },
+      "disabled": false,
+      "autoApprove": []
     }
   }
 }

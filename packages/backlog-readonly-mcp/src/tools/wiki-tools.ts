@@ -46,14 +46,14 @@ export function registerWikiTools(
       };
       const configManager = ConfigManager.getInstance();
 
+      const params: Record<string, unknown> = {};
+      if (keyword) {
+        params.keyword = keyword;
+      }
+
       try {
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
-
-        const params: Record<string, unknown> = {};
-        if (keyword) {
-          params.keyword = keyword;
-        }
 
         const wikis = await apiClient.get<BacklogWiki[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/wikis`,
@@ -80,7 +80,15 @@ export function registerWikiTools(
         }
 
         // 504エラー（Gateway Timeout）の場合は、データが多すぎることを示すメッセージを返す
-        if (error instanceof Error && error.message.includes('504')) {
+        // AxiosErrorの場合はHTTPステータスコードを直接チェック
+        const isAxiosError =
+          error && typeof error === 'object' && 'response' in error;
+        const is504Error =
+          isAxiosError &&
+          (error as { response?: { status?: number } }).response?.status ===
+            504;
+
+        if (is504Error) {
           const isDefaultProject =
             !projectIdOrKey && configManager.hasDefaultProject();
 

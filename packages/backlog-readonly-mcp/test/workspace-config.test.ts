@@ -279,6 +279,16 @@ describe('Workspace Configuration Tests', () => {
    * 設定サマリー機能のテスト
    */
   it('should provide configuration summary', () => {
+    // ConfigManagerをリセット
+    ConfigManager.getInstance().reset();
+
+    // 環境変数をクリア
+    delete process.env.BACKLOG_DOMAIN;
+    delete process.env.BACKLOG_API_KEY;
+    delete process.env.BACKLOG_DEFAULT_PROJECT;
+    delete process.env.BACKLOG_MAX_RETRIES;
+    delete process.env.BACKLOG_TIMEOUT;
+
     // 環境変数を設定
     process.env.BACKLOG_DOMAIN = 'summary.backlog.com';
     process.env.BACKLOG_API_KEY = 'summary-api-key-12345678';

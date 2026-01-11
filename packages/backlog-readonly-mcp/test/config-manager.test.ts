@@ -208,7 +208,8 @@ describe('ConfigManager Property Tests', () => {
           testCase.workspaceConfig.BACKLOG_API_KEY,
       );
       expect(config.defaultProject).toBe(
-        testCase.workspaceConfig.BACKLOG_DEFAULT_PROJECT,
+        testCase.workspaceConfig.BACKLOG_DEFAULT_PROJECT ||
+          testCase.systemEnv.BACKLOG_DEFAULT_PROJECT,
       );
 
       if (testCase.workspaceConfig.BACKLOG_MAX_RETRIES) {

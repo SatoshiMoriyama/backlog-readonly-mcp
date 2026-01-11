@@ -100,7 +100,7 @@ export class BacklogApiClient {
       try {
         return await requestFn();
       } catch (error) {
-        if (attempt < this.config.maxRetries && this.shouldRetry(error)) {
+        if (attempt <= this.config.maxRetries && this.shouldRetry(error)) {
           const waitTime = this.calculateBackoffDelay(attempt);
           logger.warn(
             `リクエストが失敗しました。${waitTime / 1000}秒後にリトライします (${attempt}/${this.config.maxRetries})`,

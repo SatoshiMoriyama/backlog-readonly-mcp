@@ -22,6 +22,7 @@ describe('ConfigManager Property Tests', () => {
       BACKLOG_DEFAULT_PROJECT: process.env.BACKLOG_DEFAULT_PROJECT,
       BACKLOG_MAX_RETRIES: process.env.BACKLOG_MAX_RETRIES,
       BACKLOG_TIMEOUT: process.env.BACKLOG_TIMEOUT,
+      BACKLOG_CONFIG_PATH: process.env.BACKLOG_CONFIG_PATH,
     };
 
     // ConfigManagerをリセット
@@ -192,6 +193,9 @@ describe('ConfigManager Property Tests', () => {
         .join('\n');
       writeFileSync(testConfigPath, configContent);
 
+      // BACKLOG_CONFIG_PATH環境変数を設定してテスト用設定ファイルを指定
+      process.env.BACKLOG_CONFIG_PATH = testConfigPath;
+
       const manager = ConfigManager.getInstance();
       const config = manager.loadConfig();
 
@@ -224,6 +228,9 @@ describe('ConfigManager Property Tests', () => {
 
       // テスト用設定ファイルを削除
       unlinkSync(testConfigPath);
+
+      // BACKLOG_CONFIG_PATH環境変数をクリア
+      delete process.env.BACKLOG_CONFIG_PATH;
     });
   });
 

@@ -80,7 +80,7 @@ describe('MCP Server Basic Functionality', () => {
 
   it('should throw error for unknown tool', async () => {
     await expect(toolRegistry.executeTool('unknown_tool', {})).rejects.toThrow(
-      'Unknown tool: unknown_tool',
+      '存在しないツール: unknown_tool',
     );
   });
 

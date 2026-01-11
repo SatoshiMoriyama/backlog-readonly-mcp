@@ -7,7 +7,8 @@ import { BacklogApiClient } from '../src/client/backlog-api-client.js';
 import { ConfigManager } from '../src/config/config-manager.js';
 import { ToolRegistry } from '../src/tools/tool-registry.js';
 import { registerProjectTools } from '../src/tools/project-tools.js';
-import type { BacklogProject } from '../src/types/index.js';
+import { registerIssueTools } from '../src/tools/issue-tools.js';
+import type { BacklogProject, BacklogIssue } from '../src/types/index.js';
 
 // モックデータ
 const mockProject: BacklogProject = {
@@ -22,6 +23,62 @@ const mockProject: BacklogProject = {
   archived: false,
   displayOrder: 1,
   useDevAttributes: false,
+};
+
+const mockIssue: BacklogIssue = {
+  id: 1,
+  projectId: 1,
+  issueKey: 'TEST-1',
+  keyId: 1,
+  issueType: {
+    id: 1,
+    projectId: 1,
+    name: 'タスク',
+    color: '#7ea800',
+    displayOrder: 1,
+  },
+  summary: 'テスト課題',
+  description: 'テスト課題の説明',
+  resolution: null,
+  priority: { id: 3, name: '中' },
+  status: {
+    id: 1,
+    projectId: 1,
+    name: '未対応',
+    color: '#ed8077',
+    displayOrder: 1,
+  },
+  assignee: null,
+  category: [],
+  versions: [],
+  milestone: [],
+  startDate: null,
+  dueDate: null,
+  estimatedHours: null,
+  actualHours: null,
+  parentIssueId: null,
+  createdUser: {
+    id: 1,
+    userId: 'test',
+    name: 'テストユーザー',
+    roleType: 1,
+    lang: 'ja',
+    mailAddress: 'test@example.com',
+  },
+  created: '2024-01-01T00:00:00Z',
+  updatedUser: {
+    id: 1,
+    userId: 'test',
+    name: 'テストユーザー',
+    roleType: 1,
+    lang: 'ja',
+    mailAddress: 'test@example.com',
+  },
+  updated: '2024-01-01T00:00:00Z',
+  customFields: [],
+  attachments: [],
+  sharedFiles: [],
+  stars: [],
 };
 
 describe('MCPサーバー統合テスト', () => {
@@ -47,6 +104,12 @@ describe('MCPサーバー統合テスト', () => {
     vi.spyOn(apiClient, 'get').mockImplementation(async (endpoint: string) => {
       if (endpoint === '/projects/TEST') {
         return mockProject;
+      }
+      if (endpoint === '/issues') {
+        return [mockIssue];
+      }
+      if (endpoint === '/issues/TEST-1') {
+        return mockIssue;
       }
       throw new Error(`Unknown endpoint: ${endpoint}`);
     });
@@ -74,16 +137,61 @@ describe('MCPサーバー統合テスト', () => {
       expect(toolNames).toContain('get_default_project');
     });
 
+    it('課題ツールが正常に登録される', () => {
+      registerIssueTools(toolRegistry, apiClient);
+
+      const tools = toolRegistry.getTools();
+      expect(tools.length).toBeGreaterThan(0);
+
+      const toolNames = tools.map((tool) => tool.name);
+      expect(toolNames).toContain('get_issues');
+      expect(toolNames).toContain('get_issue');
+      expect(toolNames).toContain('get_issue_comments');
+      expect(toolNames).toContain('get_issue_attachments');
+    });
+
+    it('すべてのツールが正常に登録される', () => {
+      registerProjectTools(toolRegistry, apiClient);
+      registerIssueTools(toolRegistry, apiClient);
+
+      const tools = toolRegistry.getTools();
+      expect(tools.length).toBe(8); // プロジェクト4つ + 課題4つ
+
+      const toolNames = tools.map((tool) => tool.name);
+      // プロジェクトツール
+      expect(toolNames).toContain('get_projects');
+      expect(toolNames).toContain('get_project');
+      expect(toolNames).toContain('get_project_users');
+      expect(toolNames).toContain('get_default_project');
+      // 課題ツール
+      expect(toolNames).toContain('get_issues');
+      expect(toolNames).toContain('get_issue');
+      expect(toolNames).toContain('get_issue_comments');
+      expect(toolNames).toContain('get_issue_attachments');
+    });
+
     it('ツールが正常に実行される', async () => {
       registerProjectTools(toolRegistry, apiClient);
+      registerIssueTools(toolRegistry, apiClient);
 
-      const result = await toolRegistry.executeTool('get_project', {
+      // プロジェクトツールのテスト
+      const projectResult = await toolRegistry.executeTool('get_project', {
         projectIdOrKey: 'TEST',
       });
 
-      expect(result).toMatchObject({
+      expect(projectResult).toMatchObject({
         success: true,
         data: mockProject,
+      });
+
+      // 課題ツールのテスト
+      const issueResult = await toolRegistry.executeTool('get_issue', {
+        issueIdOrKey: 'TEST-1',
+      });
+
+      expect(issueResult).toMatchObject({
+        success: true,
+        data: mockIssue,
       });
     });
 

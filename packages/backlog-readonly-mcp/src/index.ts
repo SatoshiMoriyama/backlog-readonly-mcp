@@ -21,6 +21,7 @@ import { BacklogApiClient } from './client/backlog-api-client.js';
 import { ConfigManager } from './config/config-manager.js';
 import { ToolRegistry } from './tools/tool-registry.js';
 import { registerProjectTools } from './tools/project-tools.js';
+import { registerIssueTools } from './tools/issue-tools.js';
 
 /**
  * MCPサーバーのメイン関数
@@ -58,8 +59,10 @@ async function main() {
   // プロジェクト関連ツールの登録
   registerProjectTools(toolRegistry, apiClient);
 
+  // 課題関連ツールの登録
+  registerIssueTools(toolRegistry, apiClient);
+
   // TODO: その他のツールの登録
-  // registerIssueTools(toolRegistry, apiClient);
   // registerUserTools(toolRegistry, apiClient);
   // registerWikiTools(toolRegistry, apiClient);
   // registerMasterDataTools(toolRegistry, apiClient);

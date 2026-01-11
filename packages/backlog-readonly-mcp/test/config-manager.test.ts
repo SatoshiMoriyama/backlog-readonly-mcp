@@ -94,10 +94,8 @@ describe('ConfigManager Property Tests', () => {
       delete process.env.BACKLOG_MAX_RETRIES;
       delete process.env.BACKLOG_TIMEOUT;
 
-      // ワークスペース設定ファイルを削除
-      if (existsSync('.backlog-mcp.env')) {
-        unlinkSync('.backlog-mcp.env');
-      }
+      // ワークスペース設定ファイルの影響を避けるため、存在しないパスを指定
+      process.env.BACKLOG_CONFIG_PATH = '/tmp/non-existent-config-for-test';
 
       // ConfigManagerをリセット
       ConfigManager.getInstance().reset();

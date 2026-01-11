@@ -305,6 +305,9 @@ describe('Workspace Configuration Tests', () => {
     const workspaceConfig = 'BACKLOG_MAX_RETRIES=9';
     writeFileSync(defaultConfigPath, workspaceConfig);
 
+    // BACKLOG_CONFIG_PATHを明示的に設定して、作成したファイルを参照させる
+    process.env.BACKLOG_CONFIG_PATH = defaultConfigPath;
+
     const manager = ConfigManager.getInstance();
     manager.loadConfig();
 

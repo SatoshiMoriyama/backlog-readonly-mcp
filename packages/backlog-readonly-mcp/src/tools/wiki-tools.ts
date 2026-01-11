@@ -21,7 +21,7 @@ export function registerWikiTools(
     {
       name: 'get_wikis',
       description:
-        'Wiki一覧を取得します（読み取り専用）。プロジェクトIDまたはキーを省略した場合、デフォルトプロジェクトを使用します。',
+        'Wiki一覧を取得します（読み取り専用）。プロジェクトIDまたはキーを省略した場合、デフォルトプロジェクトを使用します。大量のWikiがあるプロジェクトではキーワード検索の使用を推奨します。',
       inputSchema: {
         type: 'object',
         properties: {
@@ -32,7 +32,8 @@ export function registerWikiTools(
           },
           keyword: {
             type: 'string',
-            description: 'キーワード検索（Wiki名と内容を対象）',
+            description:
+              'キーワード検索（Wiki名と内容を対象）。大量のWikiがあるプロジェクトでは指定を推奨。',
           },
         },
         required: [],
@@ -45,14 +46,14 @@ export function registerWikiTools(
       };
       const configManager = ConfigManager.getInstance();
 
+      const params: Record<string, unknown> = {};
+      if (keyword) {
+        params.keyword = keyword;
+      }
+
       try {
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
-
-        const params: Record<string, unknown> = {};
-        if (keyword) {
-          params.keyword = keyword;
-        }
 
         const wikis = await apiClient.get<BacklogWiki[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/wikis`,
@@ -77,6 +78,31 @@ export function registerWikiTools(
         ) {
           throw error;
         }
+
+        // 504エラー（Gateway Timeout）の場合は、データが多すぎることを示すメッセージを返す
+        // AxiosErrorの場合はHTTPステータスコードを直接チェック
+        const isAxiosError =
+          error && typeof error === 'object' && 'response' in error;
+        const is504Error =
+          isAxiosError &&
+          (error as { response?: { status?: number } }).response?.status ===
+            504;
+
+        if (is504Error) {
+          const isDefaultProject =
+            !projectIdOrKey && configManager.hasDefaultProject();
+
+          return {
+            success: false,
+            data: [],
+            count: 0,
+            message: `プロジェクトのWikiページが多すぎて取得に時間がかかりすぎました。キーワード検索を使用して絞り込んでください${isDefaultProject ? '（デフォルトプロジェクト）' : ''}`,
+            isDefaultProject,
+            searchParams: params,
+            error: 'TIMEOUT_TOO_MANY_WIKIS',
+          };
+        }
+
         throw new Error(
           `Wiki一覧の取得に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
         );

@@ -184,12 +184,14 @@ describe('ConfigManager Property Tests', () => {
       // ConfigManagerをリセット
       ConfigManager.getInstance().reset();
 
-      // システム環境変数を設定
-      Object.entries(testCase.systemEnv).forEach(([key, value]) => {
-        if (value) {
-          process.env[key] = value;
-        }
-      });
+      // システム環境変数を設定（認証情報のみ）
+      if (testCase.systemEnv.BACKLOG_DOMAIN) {
+        process.env.BACKLOG_DOMAIN = testCase.systemEnv.BACKLOG_DOMAIN;
+      }
+      if (testCase.systemEnv.BACKLOG_API_KEY) {
+        process.env.BACKLOG_API_KEY = testCase.systemEnv.BACKLOG_API_KEY;
+      }
+      // defaultProject, maxRetries, timeoutは環境変数に設定しない（ワークスペース設定を優先させるため）
 
       // ワークスペース設定ファイルを作成
       const configContent = Object.entries(testCase.workspaceConfig)
@@ -212,8 +214,7 @@ describe('ConfigManager Property Tests', () => {
           testCase.workspaceConfig.BACKLOG_API_KEY,
       );
       expect(config.defaultProject).toBe(
-        testCase.workspaceConfig.BACKLOG_DEFAULT_PROJECT ||
-          testCase.systemEnv.BACKLOG_DEFAULT_PROJECT,
+        testCase.workspaceConfig.BACKLOG_DEFAULT_PROJECT,
       );
 
       if (testCase.workspaceConfig.BACKLOG_MAX_RETRIES) {

@@ -256,9 +256,17 @@ describe('Workspace Configuration Tests', () => {
     manager.loadConfig();
 
     // プロジェクトIDを省略し、デフォルトプロジェクトもない場合はエラー
-    expect(() => manager.resolveProjectIdOrKey()).toThrow(
-      'プロジェクトIDまたはキーが指定されておらず、デフォルトプロジェクトも設定されていません',
-    );
+    expect(() => manager.resolveProjectIdOrKey()).toThrow();
+
+    // エラーメッセージの内容を確認
+    try {
+      manager.resolveProjectIdOrKey();
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain(
+        'プロジェクトIDまたはキーが指定されておらず、デフォルトプロジェクトも設定されていません',
+      );
+    }
   });
 
   /**

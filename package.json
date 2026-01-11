@@ -41,7 +41,7 @@
   },
   "lint-staged": {
     "packages/**/*.{js,ts,jsx,tsx,json}": [
-      "npm run code:lint"
+      "pnpm run code:lint"
     ],
     "blog_content/**/*.md": [
       "markdownlint-cli2",

@@ -11,7 +11,13 @@ import axios, {
   type AxiosResponse,
 } from 'axios';
 import { ConfigManager } from '../config/config-manager.js';
-import type { BacklogConfig, BacklogError } from '../types/index.js';
+import {
+  AuthenticationError,
+  type BacklogConfig,
+  type BacklogError,
+  NetworkError,
+  ReadOnlyViolationError,
+} from '../types/index.js';
 import * as logger from '../utils/logger.js';
 
 export class BacklogApiClient {
@@ -89,11 +95,11 @@ export class BacklogApiClient {
     // 再帰ではなくループでリトライを行うことで、スタックオーバーフローのリスクを避ける
     // eslint-disable-next-line no-constant-condition
     while (true) {
+      attempt += 1;
+
       try {
         return await requestFn();
       } catch (error) {
-        attempt += 1;
-
         if (attempt <= this.config.maxRetries && this.shouldRetry(error)) {
           const waitTime = this.calculateBackoffDelay(attempt);
           logger.warn(
@@ -130,8 +136,23 @@ export class BacklogApiClient {
         return true;
       }
 
-      // ネットワークエラー（レスポンスがない場合）もリトライ
+      // ネットワークエラー（レスポンスがない場合）の場合
       if (!error.response && error.request) {
+        // 永続的なエラーコードの場合はリトライしない
+        const permanentErrorCodes = [
+          'ENOTFOUND', // DNS解決エラー
+          'ECONNREFUSED', // 接続拒否
+          'EHOSTUNREACH', // ホスト到達不可
+          'ENOENT', // ファイルまたはディレクトリが存在しない
+          'EACCES', // アクセス権限エラー
+          'EPERM', // 操作が許可されていない
+        ];
+
+        if (error.code && permanentErrorCodes.includes(error.code)) {
+          return false;
+        }
+
+        // その他のネットワークエラー（一時的な可能性がある）はリトライ
         return true;
       }
     }
@@ -162,21 +183,21 @@ export class BacklogApiClient {
     const errorMessage =
       'このMCPサーバーは読み取り専用です。POSTリクエストは許可されていません。';
     logger.error('読み取り専用制限違反: POST試行', { operation: 'POST' });
-    throw new Error(errorMessage);
+    throw new ReadOnlyViolationError(errorMessage);
   }
 
   public async put(): Promise<never> {
     const errorMessage =
       'このMCPサーバーは読み取り専用です。PUTリクエストは許可されていません。';
     logger.error('読み取り専用制限違反: PUT試行', { operation: 'PUT' });
-    throw new Error(errorMessage);
+    throw new ReadOnlyViolationError(errorMessage);
   }
 
   public async delete(): Promise<never> {
     const errorMessage =
       'このMCPサーバーは読み取り専用です。DELETEリクエストは許可されていません。';
     logger.error('読み取り専用制限違反: DELETE試行', { operation: 'DELETE' });
-    throw new Error(errorMessage);
+    throw new ReadOnlyViolationError(errorMessage);
   }
 
   /**
@@ -234,7 +255,7 @@ export class BacklogApiClient {
    * エラーをBacklogErrorに変換
    * 要件7.5: ユーザーフレンドリーなエラーメッセージを提供する
    */
-  private convertToBacklogError(error: unknown): BacklogError {
+  private convertToBacklogError(error: unknown): Error {
     if (axios.isAxiosError(error)) {
       const response = error.response;
 
@@ -248,45 +269,36 @@ export class BacklogApiClient {
           backlogError?.errors?.[0]?.message || error.message,
         );
 
-        return {
-          code: errorCode,
-          message: errorMessage,
-          details: backlogError,
-        };
+        // ステータスコードに応じて適切なエラークラスを返す
+        if (response.status === 401 || response.status === 403) {
+          return new AuthenticationError(errorMessage);
+        }
+
+        return new Error(errorMessage);
       } else if (error.request) {
         // ネットワークエラー
-        return {
-          code: 'NETWORK_ERROR',
-          message:
-            'ネットワークに接続できません。インターネット接続を確認してください。',
-          details: error.message,
-        };
+        return new NetworkError(
+          'ネットワークに接続できません。インターネット接続を確認してください。',
+        );
       } else if (error.code === 'ENOTFOUND') {
         // DNS解決エラー
-        return {
-          code: 'DNS_ERROR',
-          message:
-            'Backlogドメインが見つかりません。BACKLOG_DOMAINの設定を確認してください。',
-          details: error.message,
-        };
+        return new NetworkError(
+          'Backlogドメインが見つかりません。BACKLOG_DOMAINの設定を確認してください。',
+        );
       } else if (error.code === 'ECONNABORTED') {
         // タイムアウトエラー
-        return {
-          code: 'TIMEOUT_ERROR',
-          message:
-            'リクエストがタイムアウトしました。しばらく時間をおいて再試行してください。',
-          details: error.message,
-        };
+        return new NetworkError(
+          'リクエストがタイムアウトしました。しばらく時間をおいて再試行してください。',
+        );
       }
     }
 
     // その他のエラー
-    return {
-      code: 'UNKNOWN_ERROR',
-      message:
-        '予期しないエラーが発生しました。しばらく時間をおいて再試行してください。',
-      details: error instanceof Error ? error.message : String(error),
-    };
+    return new Error(
+      error instanceof Error
+        ? error.message
+        : '予期しないエラーが発生しました。しばらく時間をおいて再試行してください。',
+    );
   }
 
   /**

@@ -26,6 +26,11 @@ import { registerProjectTools } from './tools/project-tools.js';
 import { ToolRegistry } from './tools/tool-registry.js';
 import { registerUserTools } from './tools/user-tools.js';
 import { registerWikiTools } from './tools/wiki-tools.js';
+import {
+  AuthenticationError,
+  NetworkError,
+  ReadOnlyViolationError,
+} from './types/index.js';
 import * as logger from './utils/logger.js';
 
 /**
@@ -44,10 +49,10 @@ async function main() {
     const isValidApiKey = await apiClient.validateApiKey();
 
     if (!isValidApiKey) {
-      logger.error(
-        'APIキーが無効です。BACKLOG_API_KEYの設定を確認してください。',
-      );
-      process.exit(1);
+      const errorMessage =
+        'APIキーが無効です。BACKLOG_API_KEYの設定を確認してください。';
+      logger.error(errorMessage);
+      throw new AuthenticationError(errorMessage);
     }
 
     // ツールレジストリの初期化
@@ -147,38 +152,29 @@ async function main() {
           args: toolArgs,
         });
 
-        // エラーの種類に応じて適切なMcpErrorを生成
+        // エラーの種類に応じて適切なMcpErrorを生成（型ベース）
+        if (error instanceof ReadOnlyViolationError) {
+          throw new McpError(
+            ErrorCode.MethodNotFound,
+            `読み取り専用制限: ${error.message}`,
+          );
+        }
+
+        if (error instanceof AuthenticationError) {
+          throw new McpError(
+            ErrorCode.InvalidRequest,
+            `認証エラー: ${error.message}`,
+          );
+        }
+
+        if (error instanceof NetworkError) {
+          throw new McpError(
+            ErrorCode.InternalError,
+            `接続エラー: ${error.message}`,
+          );
+        }
+
         if (error instanceof Error) {
-          // 読み取り専用制限エラーの場合
-          if (error.message.includes('読み取り専用')) {
-            throw new McpError(
-              ErrorCode.MethodNotFound,
-              `読み取り専用制限: ${error.message}`,
-            );
-          }
-
-          // APIエラーの場合
-          if (
-            error.message.includes('APIキー') ||
-            error.message.includes('権限')
-          ) {
-            throw new McpError(
-              ErrorCode.InvalidRequest,
-              `認証エラー: ${error.message}`,
-            );
-          }
-
-          // ネットワークエラーの場合
-          if (
-            error.message.includes('ネットワーク') ||
-            error.message.includes('接続')
-          ) {
-            throw new McpError(
-              ErrorCode.InternalError,
-              `接続エラー: ${error.message}`,
-            );
-          }
-
           // その他のエラー
           throw new McpError(ErrorCode.InternalError, error.message);
         }
@@ -199,8 +195,20 @@ async function main() {
       config: apiClient.getConfigInfo(),
     });
   } catch (error) {
-    logger.logError('サーバー起動中にエラーが発生しました', error);
-    process.exit(1);
+    // エラーの種類に応じて適切なログメッセージと終了コードを設定
+    if (error instanceof AuthenticationError) {
+      logger.error(`認証エラー: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof NetworkError) {
+      logger.error(`ネットワークエラー: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof ReadOnlyViolationError) {
+      logger.error(`読み取り専用制限違反: ${error.message}`);
+      process.exit(1);
+    } else {
+      logger.logError('サーバー起動中にエラーが発生しました', error);
+      process.exit(1);
+    }
   }
 }
 

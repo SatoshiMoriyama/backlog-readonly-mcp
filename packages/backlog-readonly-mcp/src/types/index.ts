@@ -234,6 +234,28 @@ export interface MCPError {
   data?: unknown;
 }
 
+// カスタムエラークラス
+export class ReadOnlyViolationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ReadOnlyViolationError';
+  }
+}
+
+export class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthenticationError';
+  }
+}
+
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
 /**
  * シンプルな JSON Schema 型定義
  *

@@ -6,6 +6,7 @@
  */
 
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { ReadOnlyViolationError } from '../types/index.js';
 import * as logger from '../utils/logger.js';
 
 export type ToolHandler = (args: Record<string, unknown>) => Promise<unknown>;
@@ -107,7 +108,7 @@ export class ToolRegistry {
     if (isWriteOperation) {
       const errorMessage = `読み取り専用制限違反: ツール "${tool.name}" は書き込み操作を示すため登録できません。このMCPサーバーは読み取り専用です。`;
       logger.error(errorMessage);
-      throw new Error(errorMessage);
+      throw new ReadOnlyViolationError(errorMessage);
     }
 
     // ツール説明に書き込み操作を示すキーワードが含まれているかチェック
@@ -135,9 +136,9 @@ export class ToolRegistry {
     );
 
     if (hasWriteKeyword && !description.includes('読み取り専用')) {
-      logger.warn(
-        `ツール "${tool.name}" の説明に書き込み操作を示すキーワードが含まれていますが、読み取り専用の明記がありません`,
-      );
+      const errorMessage = `読み取り専用制限違反: ツール "${tool.name}" の説明に書き込み操作を示すキーワードが含まれていますが、読み取り専用の明記がありません。`;
+      logger.error(errorMessage);
+      throw new ReadOnlyViolationError(errorMessage);
     }
   }
 
@@ -166,6 +167,7 @@ export class ToolRegistry {
   ): ToolHandler {
     return async (args: Record<string, unknown>) => {
       // 引数に書き込み操作を示すパラメータが含まれていないかチェック
+      // より正確な検出のため、完全一致または先頭一致をチェック
       const writeParams = [
         'create',
         'add',
@@ -178,16 +180,20 @@ export class ToolRegistry {
         'put',
         'patch',
       ];
-      const hasWriteParam = Object.keys(args).some((key) =>
-        writeParams.some((writeParam) =>
-          key.toLowerCase().includes(writeParam),
-        ),
-      );
+
+      const hasWriteParam = Object.keys(args).some((key) => {
+        const lowerKey = key.toLowerCase();
+        return writeParams.some((writeParam) => {
+          return (
+            lowerKey === writeParam || lowerKey.startsWith(writeParam + '_')
+          );
+        });
+      });
 
       if (hasWriteParam) {
         const errorMessage = `読み取り専用制限違反: ツール "${toolName}" で書き込み操作を示すパラメータが検出されました。このMCPサーバーは読み取り専用です。`;
         logger.error(errorMessage, { toolName, args });
-        throw new Error(errorMessage);
+        throw new ReadOnlyViolationError(errorMessage);
       }
 
       // 実際のハンドラーを実行

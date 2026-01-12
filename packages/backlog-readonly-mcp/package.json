@@ -1,14 +1,13 @@
 {
   "name": "backlog-readonly-mcp",
   "version": "0.1.0",
-  "description": "Backlog読み取り専用MCPサーバー",
+  "description": "Backlog読み取り専用MCPサーバー - Read-only MCP server for Backlog API",
   "bin": {
     "backlog-readonly-mcp": "./dist/index.js"
   },
   "files": [
     "dist/**/*",
     "README.md",
-    "MCP_CLIENT_SETUP.md",
     ".backlog-mcp.env.example"
   ],
   "type": "module",
@@ -27,16 +26,25 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "backlog",
     "readonly",
-    "api"
+    "read-only",
+    "api",
+    "nulab",
+    "project-management",
+    "issue-tracking",
+    "ai-assistant",
+    "claude",
+    "kiro"
   ],
-  "author": "Backlog MCP Team",
+  "author": "SatoshiMoriyama",
   "license": "MIT",
-  "homepage": "https://github.com/SatoshiMoriyama/backlog-readonly-mcp#readme",
+  "homepage": "https://github.com/SatoshiMoriyama/backlog-readonly-mcp/tree/main/packages/backlog-readonly-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SatoshiMoriyama/backlog-readonly-mcp.git"
+    "url": "git+https://github.com/SatoshiMoriyama/backlog-readonly-mcp.git",
+    "directory": "packages/backlog-readonly-mcp"
   },
   "bugs": {
     "url": "https://github.com/SatoshiMoriyama/backlog-readonly-mcp/issues"

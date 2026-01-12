@@ -1,2 +1,5 @@
 packages:
-  - "packages/*"
+  - packages/*
+
+overrides:
+  qs@<6.14.1: '>=6.14.1'

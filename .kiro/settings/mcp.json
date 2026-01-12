@@ -9,9 +9,9 @@
       ]
     },
     "backlog-readonly": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "packages/backlog-readonly-mcp/dist/index.js"
+        "-y", "backlog-readonly-mcp"
       ],
       "env": {
         "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",

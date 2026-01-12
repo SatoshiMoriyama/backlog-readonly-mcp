@@ -2,6 +2,8 @@
 
 Backlog API を利用して、プロジェクト、課題、ユーザー情報などを参照できる MCP（Model Context Protocol）サーバーです。この MCP サーバーは**読み取り専用**に特化し、データの変更や作成は一切行いません。
 
+> **注意**: このプロジェクトは非公式のツールです。株式会社ヌーラボ（Backlog開発元）とは一切関係ありません。
+
 ## 特徴
 
 - 🔒 **完全読み取り専用**: データの変更・作成は一切行わない安全設計
@@ -9,20 +11,6 @@ Backlog API を利用して、プロジェクト、課題、ユーザー情報�
 - 🛠️ **豊富なツール**: プロジェクト、課題、ユーザー、Wiki、マスタデータの取得
 - 🔑 **セキュア**: API キーの安全な管理とマスキング機能
 - 📊 **包括的エラーハンドリング**: 詳細なログとユーザーフレンドリーなエラーメッセージ
-
-## 使用方法
-
-### 推奨：npxで直接実行（インストール不要）
-
-```bash
-npx backlog-readonly-mcp
-```
-
-### グローバルインストール（継続的に使用する場合）
-
-```bash
-npm install -g backlog-readonly-mcp
-```
 
 ## 設定
 
@@ -48,7 +36,42 @@ BACKLOG_MAX_RETRIES="3"
 BACKLOG_TIMEOUT="30000"
 ```
 
+> **重要**: APIキーが含まれるため、`.backlog-mcp.env` を `.gitignore` に追加することを強く推奨します：
+> ```
+> # .gitignore
+> .backlog-mcp.env
+> ```
+
 ### 3. MCPクライアント設定
+
+#### Kiro
+
+`.kiro/settings/mcp.json` に追加：
+
+```json
+{
+  "mcpServers": {
+    "backlog-readonly": {
+      "command": "npx",
+      "args": ["-y", "backlog-readonly-mcp"],
+      "env": {
+        "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",
+        "BACKLOG_API_KEY": "${BACKLOG_API_KEY}",
+        "BACKLOG_CONFIG_PATH": "${workspaceFolder}/.backlog-mcp.env"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "test_connection",
+        "get_default_project",
+        "get_projects",
+        "get_wikis",
+        "get_project",
+        "get_issues"
+      ]
+    }
+  }
+}
+```
 
 #### Claude Desktop
 
@@ -59,7 +82,7 @@ BACKLOG_TIMEOUT="30000"
   "mcpServers": {
     "backlog-readonly": {
       "command": "npx",
-      "args": ["backlog-readonly-mcp"],
+      "args": ["-y", "backlog-readonly-mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -75,7 +98,7 @@ BACKLOG_TIMEOUT="30000"
   "cline.mcpServers": {
     "backlog-readonly": {
       "command": "npx",
-      "args": ["backlog-readonly-mcp"],
+      "args": ["-y", "backlog-readonly-mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -91,7 +114,7 @@ BACKLOG_TIMEOUT="30000"
   "mcpServers": {
     "backlog-readonly": {
       "command": "npx",
-      "args": ["backlog-readonly-mcp"],
+      "args": ["-y", "backlog-readonly-mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -104,7 +127,6 @@ BACKLOG_TIMEOUT="30000"
 - `get_projects` - プロジェクト一覧の取得
 - `get_project` - 特定プロジェクトの詳細取得
 - `get_project_users` - プロジェクトメンバー一覧の取得
-- `get_default_project` - デフォルトプロジェクトの情報取得
 
 ### 課題関連
 - `get_issues` - 課題一覧の取得（検索条件付き）
@@ -129,40 +151,26 @@ BACKLOG_TIMEOUT="30000"
 
 ### システム関連
 - `test_connection` - 接続テスト
+- `get_default_project` - デフォルトプロジェクトの情報取得
 
-## 使用例
+## 使用方法（MCP設定後）
 
-### 基本的な使用方法
+MCP設定が完了すると、AIアシスタント（Kiro、Claude等）が自動的にBacklogの情報を取得できるようになります。
 
-```typescript
-// デフォルトプロジェクトの課題を取得
-await callTool("get_issues", {});
+### 基本的な質問例
 
-// 特定プロジェクトの課題を取得
-await callTool("get_issues", { projectId: "OTHERPROJ" });
+- 「プロジェクト一覧を教えて」
+- 「未完了の課題を教えて」
+- 「MYPROJ-123の詳細を教えて」
+- 「今日期限の課題はある？」
+- 「バグ修正に関する課題を検索して」
 
-// 課題の詳細を取得
-await callTool("get_issue", { issueIdOrKey: "MYPROJ-123" });
+### 検索条件の指定
 
-// プロジェクト一覧を取得
-await callTool("get_projects", {});
-```
-
-### 検索条件付きの課題取得
-
-```typescript
-// 担当者で絞り込み
-await callTool("get_issues", {
-  assigneeId: [123, 456],
-  statusId: [1, 2, 3]
-});
-
-// キーワード検索
-await callTool("get_issues", {
-  keyword: "バグ修正",
-  count: 50
-});
-```
+- 「担当者が田中さんの課題を教えて」
+- 「優先度が高い課題を50件取得して」
+- 「先週作成された課題を教えて」
+- 「完了した課題の一覧を教えて」
 
 ## 設定オプション
 
@@ -201,6 +209,21 @@ await callTool("get_issues", {
 プロジェクトが見つかりません
 ```
 **解決方法**: プロジェクトキーまたは ID を確認してください。
+
+#### 4. MCP設定エラー
+```
+command not found: backlog-readonly-mcp
+```
+**解決方法**: MCP設定で`-y`フラグを追加してください：
+```json
+"args": ["-y", "backlog-readonly-mcp"]
+```
+
+#### 5. 設定ファイルが読み込まれない
+**解決方法**: 
+- ワークスペースルートに `.backlog-mcp.env` ファイルがあることを確認
+- MCP設定で `BACKLOG_CONFIG_PATH` が正しく設定されていることを確認
+- 設定の優先順位：ワークスペース設定ファイル > 環境変数
 
 ### デバッグモード
 

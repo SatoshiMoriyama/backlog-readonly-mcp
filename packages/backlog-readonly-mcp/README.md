@@ -64,7 +64,7 @@ BACKLOG_TIMEOUT="30000"
         "test_connection",
         "get_default_project",
         "get_projects",
-        "get_wikis",
+        "get_recent_wikis",
         "get_project",
         "get_issues"
       ]
@@ -140,7 +140,7 @@ BACKLOG_TIMEOUT="30000"
 - `get_myself` - 自分のユーザー情報取得
 
 ### Wiki関連
-- `get_wikis` - Wiki 一覧の取得
+- `get_recent_wikis` - 最近閲覧したWiki一覧の取得
 - `get_wiki` - 特定 Wiki ページの取得
 
 ### マスタデータ関連

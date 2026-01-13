@@ -74,14 +74,14 @@ export function registerWikiTools(
                 targetProjectId = project.id;
               }
             } catch (projectError) {
-              // プロジェクト一覧取得に失敗した場合は警告を出すが処理は継続
-              console.warn(
-                `プロジェクト一覧の取得に失敗しました: ${projectError}`,
+              // プロジェクト一覧取得に失敗した場合はエラーを返す
+              throw new Error(
+                `プロジェクト一覧の取得に失敗しました。プロジェクトキー "${projectIdOrKey}" の確認ができません: ${projectError instanceof Error ? projectError.message : '不明なエラー'}`,
               );
             }
           }
 
-          if (targetProjectId) {
+          if (targetProjectId !== null) {
             filteredWikis = recentWikis.filter((wiki) => {
               return wiki.projectId === targetProjectId;
             });
@@ -95,10 +95,10 @@ export function registerWikiTools(
         if (keyword) {
           const lowerKeyword = keyword.toLowerCase();
           filteredWikis = filteredWikis.filter((wiki) => {
-            const nameMatch = wiki.name?.toLowerCase().includes(lowerKeyword);
-            const contentMatch = wiki.content
-              ?.toLowerCase()
-              .includes(lowerKeyword);
+            const nameMatch =
+              wiki.name?.toLowerCase().includes(lowerKeyword) ?? false;
+            const contentMatch =
+              wiki.content?.toLowerCase().includes(lowerKeyword) ?? false;
             return nameMatch || contentMatch;
           });
         }

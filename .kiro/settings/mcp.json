@@ -9,14 +9,16 @@
       ]
     },
     "backlog-readonly": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y", "backlog-readonly-mcp"
+        "/Users/mori/Documents/Serverworks/blog/backlog-readonly-mcp/packages/backlog-readonly-mcp/dist/index.js"
       ],
       "env": {
         "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",
         "BACKLOG_API_KEY": "${BACKLOG_API_KEY}",
-        "BACKLOG_CONFIG_PATH": "${workspaceFolder}/.backlog-mcp.env"
+        "BACKLOG_CONFIG_PATH": "${workspaceFolder}/.backlog-mcp.env",
+        "FASTMCP_LOG_LEVEL": "DEBUG",
+        "NODE_ENV": "development"
       },
       "disabled": false,
       "autoApprove": [

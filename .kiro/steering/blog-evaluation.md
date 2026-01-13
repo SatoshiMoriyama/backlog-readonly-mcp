@@ -1,6 +1,6 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: '**/*.md'
+fileMatchPattern: 'blog_content/*.md'
 ---
 
 # ブログ記事評価プロンプト v2.2

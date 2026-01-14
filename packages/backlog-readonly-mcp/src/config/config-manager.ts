@@ -42,6 +42,7 @@ export class ConfigManager {
 
     try {
       logger.info('設定の読み込みを開始します');
+      logger.debug(`カレントディレクトリ: ${process.cwd()}`);
 
       // システム環境変数を保存
       const systemEnv = {
@@ -61,6 +62,8 @@ export class ConfigManager {
         envConfigPath && envConfigPath.trim().length > 0
           ? envConfigPath
           : '.backlog-mcp.env';
+
+      logger.debug(`設定ファイルパス: ${configPath}`);
 
       if (existsSync(configPath)) {
         try {

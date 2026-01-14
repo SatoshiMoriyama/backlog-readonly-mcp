@@ -14,40 +14,52 @@ Backlog API を利用して、プロジェクト、課題、ユーザー情報�
 
 ## 設定
 
-### 1. 環境変数の設定
+この MCP サーバーを使用するには、Backlog API の認証情報と MCP クライアントの設定が必要です。
 
-システム全体で使用する場合：
+### 必要な設定項目
+
+以下の環境変数を設定する必要があります（詳細は「設定オプション」セクションを参照）：
+
+- `BACKLOG_DOMAIN` (必須): Backlog のドメイン（例: `your-company.backlog.com`）
+- `BACKLOG_API_KEY` (必須): Backlog API キー
+- `BACKLOG_DEFAULT_PROJECT` (任意): デフォルトプロジェクトキー
+- `BACKLOG_MAX_RETRIES` (任意): リトライ回数（デフォルト: 3）
+- `BACKLOG_TIMEOUT` (任意): タイムアウト（デフォルト: 30000ms）
+- `FASTMCP_LOG_LEVEL` (任意): ログレベル（デフォルト: INFO）
+
+### 設定方法
+
+#### 方法1: MCP設定ファイルに直接記載
+
+```json
+{
+  "mcpServers": {
+    "backlog-readonly": {
+      "command": "npx",
+      "args": ["-y", "backlog-readonly-mcp"],
+      "env": {
+        "BACKLOG_DOMAIN": "your-company.backlog.com",
+        "BACKLOG_API_KEY": "your-api-key-here",
+        "BACKLOG_DEFAULT_PROJECT": "MYPROJ"
+      }
+    }
+  }
+}
+```
+
+> **注意**: APIキーを直接記載する場合、このファイルをGitにコミットしないよう注意してください。
+
+#### 方法2: システム環境変数を参照
+
+事前にシステム環境変数を設定：
 
 ```bash
 export BACKLOG_DOMAIN="your-company.backlog.com"
 export BACKLOG_API_KEY="your-api-key-here"
+export BACKLOG_DEFAULT_PROJECT="MYPROJ"
 ```
 
-### 2. ワークスペース固有の設定（推奨）
-
-プロジェクトルートに `.backlog-mcp.env` ファイルを作成：
-
-```bash
-# .backlog-mcp.env
-BACKLOG_DOMAIN="your-company.backlog.com"
-BACKLOG_API_KEY="your-api-key-here"
-BACKLOG_DEFAULT_PROJECT="MYPROJ"
-BACKLOG_MAX_RETRIES="3"
-BACKLOG_TIMEOUT="30000"
-```
-
-> **重要**: APIキーが含まれるため、`.backlog-mcp.env` を `.gitignore` に追加することを強く推奨します：
-> ```
-> # .gitignore
-> .backlog-mcp.env
-> ```
-
-### 3. MCPクライアント設定
-
-#### Kiro
-
-`.kiro/settings/mcp.json` に追加：
-
+MCP 設定ファイル：
 ```json
 {
   "mcpServers": {
@@ -57,69 +69,67 @@ BACKLOG_TIMEOUT="30000"
       "env": {
         "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",
         "BACKLOG_API_KEY": "${BACKLOG_API_KEY}",
+        "BACKLOG_DEFAULT_PROJECT": "${BACKLOG_DEFAULT_PROJECT}"
+      }
+    }
+  }
+}
+```
+
+> **Note**: 環境変数の参照方法（`${変数名}` の展開）はMCPクライアントによって異なります。展開されない場合は、方法1（直接記載）または方法3（設定ファイル使用）をご利用ください。
+
+#### 方法3: 設定ファイルを使用（推奨）
+
+プロジェクトルートに `.backlog-mcp.env` ファイルを作成：
+
+```bash
+# .backlog-mcp.env
+BACKLOG_DOMAIN=your-company.backlog.com
+BACKLOG_API_KEY=your-api-key-here
+BACKLOG_DEFAULT_PROJECT=MYPROJ
+```
+
+> **重要**: `.backlog-mcp.env` を `.gitignore` に追加してください：
+> ```
+> # .gitignore
+> .backlog-mcp.env
+> ```
+
+MCP設定ファイルで `BACKLOG_CONFIG_PATH` を指定：
+
+```json
+{
+  "mcpServers": {
+    "backlog-readonly": {
+      "command": "npx",
+      "args": ["-y", "backlog-readonly-mcp"],
+      "env": {
+        "BACKLOG_CONFIG_PATH": "/absolute/path/to/.backlog-mcp.env"
+      }
+    }
+  }
+}
+```
+
+MCPクライアントが `${workspaceFolder}` 変数をサポートしている場合：
+```json
+{
+  "mcpServers": {
+    "backlog-readonly": {
+      "command": "npx",
+      "args": ["-y", "backlog-readonly-mcp"],
+      "env": {
         "BACKLOG_CONFIG_PATH": "${workspaceFolder}/.backlog-mcp.env"
-      },
-      "disabled": false,
-      "autoApprove": [
-        "test_connection",
-        "get_default_project",
-        "get_projects",
-        "get_recent_wikis",
-        "get_project",
-        "get_issues"
-      ]
+      }
     }
   }
 }
 ```
 
-#### Claude Desktop
-
-`~/.claude/claude_desktop_config.json` に追加：
-
-```json
-{
-  "mcpServers": {
-    "backlog-readonly": {
-      "command": "npx",
-      "args": ["-y", "backlog-readonly-mcp"],
-      "cwd": "${workspaceFolder}"
-    }
-  }
-}
-```
-
-#### Cline (VS Code)
-
-`.vscode/settings.json` に追加：
-
-```json
-{
-  "cline.mcpServers": {
-    "backlog-readonly": {
-      "command": "npx",
-      "args": ["-y", "backlog-readonly-mcp"],
-      "cwd": "${workspaceFolder}"
-    }
-  }
-}
-```
-
-#### Cursor
-
-`.cursor/mcp.json` に追加：
-
-```json
-{
-  "mcpServers": {
-    "backlog-readonly": {
-      "command": "npx",
-      "args": ["-y", "backlog-readonly-mcp"],
-      "cwd": "${workspaceFolder}"
-    }
-  }
-}
-```
+> **Note**: 
+> - `${workspaceFolder}` 変数のサポートはMCPクライアントによって異なります
+> - 展開されない場合は絶対パスを使用してください
+> - `BACKLOG_CONFIG_PATH` を指定しない場合、カレントディレクトリの `.backlog-mcp.env` を探しますが、カレントディレクトリはMCPクライアントによって異なるため、明示的な指定を推奨します
 
 ## 利用可能なツール
 
@@ -140,7 +150,7 @@ BACKLOG_TIMEOUT="30000"
 - `get_myself` - 自分のユーザー情報取得
 
 ### Wiki関連
-- `get_recent_wikis` - 最近閲覧したWiki一覧の取得
+- `get_recent_wikis` - 最近閲覧した Wiki 一覧の取得
 - `get_wiki` - 特定 Wiki ページの取得
 
 ### マスタデータ関連
@@ -155,20 +165,20 @@ BACKLOG_TIMEOUT="30000"
 
 ## 使用方法（MCP設定後）
 
-MCP設定が完了すると、AIアシスタント（Kiro、Claude等）が自動的にBacklogの情報を取得できるようになります。
+MCP 設定が完了すると、AI アシスタント（Kiro、Claude 等）が自動的に Backlog の情報を取得できるようになります。
 
 ### 基本的な質問例
 
 - 「プロジェクト一覧を教えて」
 - 「未完了の課題を教えて」
-- 「MYPROJ-123の詳細を教えて」
+- 「MYPROJ-123 の詳細を教えて」
 - 「今日期限の課題はある？」
 - 「バグ修正に関する課題を検索して」
 
 ### 検索条件の指定
 
 - 「担当者が田中さんの課題を教えて」
-- 「優先度が高い課題を50件取得して」
+- 「優先度が高い課題を 50 件取得して」
 - 「先週作成された課題を教えて」
 - 「完了した課題の一覧を教えて」
 
@@ -185,16 +195,16 @@ MCP設定が完了すると、AIアシスタント（Kiro、Claude等）が自�
 
 ### ログレベルの設定
 
-`FASTMCP_LOG_LEVEL`環境変数でログの詳細度を調整できます：
+`FASTMCP_LOG_LEVEL` 環境変数でログの詳細度を調整できます：
 
 - **`ERROR`**: エラーログのみ表示
 - **`WARN`**: 警告とエラーログを表示
 - **`INFO`**: 情報、警告、エラーログを表示（デフォルト）
 - **`DEBUG`**: すべてのログを表示（デバッグ用）
 
-#### Kiroでの設定例
+#### 設定例
 
-`.kiro/settings/mcp.json`:
+MCP設定ファイル：
 ```json
 {
   "mcpServers": {
@@ -202,8 +212,6 @@ MCP設定が完了すると、AIアシスタント（Kiro、Claude等）が自�
       "command": "npx",
       "args": ["-y", "backlog-readonly-mcp"],
       "env": {
-        "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",
-        "BACKLOG_API_KEY": "${BACKLOG_API_KEY}",
         "FASTMCP_LOG_LEVEL": "DEBUG"
       }
     }
@@ -211,7 +219,7 @@ MCP設定が完了すると、AIアシスタント（Kiro、Claude等）が自�
 }
 ```
 
-ログはKiroの「MCP Logs」ビューで確認できます。
+ログの確認方法はMCPクライアントによって異なります。
 
 ## セキュリティ
 
@@ -245,7 +253,7 @@ MCP設定が完了すると、AIアシスタント（Kiro、Claude等）が自�
 ```
 command not found: backlog-readonly-mcp
 ```
-**解決方法**: MCP設定で`-y`フラグを追加してください：
+**解決方法**: MCP 設定で `-y` フラグを追加してください：
 ```json
 "args": ["-y", "backlog-readonly-mcp"]
 ```
@@ -253,65 +261,8 @@ command not found: backlog-readonly-mcp
 #### 5. 設定ファイルが読み込まれない
 **解決方法**: 
 - ワークスペースルートに `.backlog-mcp.env` ファイルがあることを確認
-- MCP設定で `BACKLOG_CONFIG_PATH` が正しく設定されていることを確認
+- MCP 設定で `BACKLOG_CONFIG_PATH` が正しく設定されていることを確認
 - 設定の優先順位：ワークスペース設定ファイル > 環境変数
-
-### デバッグモード
-
-詳細なログを確認したい場合は、`FASTMCP_LOG_LEVEL`環境変数を`DEBUG`に設定してください：
-
-#### Kiroの場合
-`.kiro/settings/mcp.json`で設定：
-```json
-{
-  "mcpServers": {
-    "backlog-readonly": {
-      "env": {
-        "FASTMCP_LOG_LEVEL": "DEBUG"
-      }
-    }
-  }
-}
-```
-
-#### ターミナルで直接実行する場合
-```bash
-FASTMCP_LOG_LEVEL=DEBUG npx backlog-readonly-mcp
-```
-
-## 開発
-
-### ローカル開発
-
-```bash
-# 依存関係のインストール
-npm install
-
-# 開発モード（ウォッチモード）
-npm run dev
-
-# ビルド
-npm run build
-
-# テスト実行
-npm test
-
-# リント
-npm run lint
-```
-
-### テスト
-
-```bash
-# 全テスト実行
-npm test
-
-# ウォッチモード
-npm run test:watch
-
-# 接続テスト
-npm run inspector
-```
 
 ## ライセンス
 

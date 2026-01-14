@@ -181,6 +181,37 @@ MCP設定が完了すると、AIアシスタント（Kiro、Claude等）が自�
 | `BACKLOG_DEFAULT_PROJECT` | ❌ | - | デフォルトプロジェクトキー |
 | `BACKLOG_MAX_RETRIES` | ❌ | 3 | APIリクエストのリトライ回数 |
 | `BACKLOG_TIMEOUT` | ❌ | 30000 | APIリクエストのタイムアウト（ms） |
+| `FASTMCP_LOG_LEVEL` | ❌ | INFO | ログレベル（ERROR, WARN, INFO, DEBUG） |
+
+### ログレベルの設定
+
+`FASTMCP_LOG_LEVEL`環境変数でログの詳細度を調整できます：
+
+- **`ERROR`**: エラーログのみ表示
+- **`WARN`**: 警告とエラーログを表示
+- **`INFO`**: 情報、警告、エラーログを表示（デフォルト）
+- **`DEBUG`**: すべてのログを表示（デバッグ用）
+
+#### Kiroでの設定例
+
+`.kiro/settings/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "backlog-readonly": {
+      "command": "npx",
+      "args": ["-y", "backlog-readonly-mcp"],
+      "env": {
+        "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",
+        "BACKLOG_API_KEY": "${BACKLOG_API_KEY}",
+        "FASTMCP_LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}
+```
+
+ログはKiroの「MCP Logs」ビューで確認できます。
 
 ## セキュリティ
 
@@ -227,10 +258,25 @@ command not found: backlog-readonly-mcp
 
 ### デバッグモード
 
-詳細なログを確認したい場合：
+詳細なログを確認したい場合は、`FASTMCP_LOG_LEVEL`環境変数を`DEBUG`に設定してください：
 
+#### Kiroの場合
+`.kiro/settings/mcp.json`で設定：
+```json
+{
+  "mcpServers": {
+    "backlog-readonly": {
+      "env": {
+        "FASTMCP_LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}
+```
+
+#### ターミナルで直接実行する場合
 ```bash
-DEBUG=backlog-mcp:* npx backlog-readonly-mcp
+FASTMCP_LOG_LEVEL=DEBUG npx backlog-readonly-mcp
 ```
 
 ## 開発

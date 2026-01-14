@@ -12,7 +12,27 @@ export enum LogLevel {
   DEBUG = 3,
 }
 
-let logLevel: LogLevel = LogLevel.INFO;
+/**
+ * 環境変数からログレベルを初期化
+ */
+function initializeLogLevel(): LogLevel {
+  const envLogLevel = process.env.FASTMCP_LOG_LEVEL?.toUpperCase();
+
+  switch (envLogLevel) {
+    case 'ERROR':
+      return LogLevel.ERROR;
+    case 'WARN':
+      return LogLevel.WARN;
+    case 'INFO':
+      return LogLevel.INFO;
+    case 'DEBUG':
+      return LogLevel.DEBUG;
+    default:
+      return LogLevel.INFO;
+  }
+}
+
+let logLevel: LogLevel = initializeLogLevel();
 
 /**
  * ログレベルを設定
@@ -22,12 +42,32 @@ export function setLogLevel(level: LogLevel): void {
 }
 
 /**
+ * ログメッセージをstderrに出力
+ * MCPサーバーはstdioで通信するため、ログはstderrに出力する必要がある
+ */
+function writeLog(level: string, message: string, ...args: unknown[]): void {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${level}] ${timestamp} ${message}`;
+
+  if (args.length > 0) {
+    // 追加の引数がある場合はJSON形式で出力
+    const formattedArgs = args
+      .map((arg) =>
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg),
+      )
+      .join(' ');
+    process.stderr.write(`${logMessage} ${formattedArgs}\n`);
+  } else {
+    process.stderr.write(`${logMessage}\n`);
+  }
+}
+
+/**
  * エラーログ
  */
 export function error(message: string, ...args: unknown[]): void {
   if (logLevel >= LogLevel.ERROR) {
-    const timestamp = new Date().toISOString();
-    console.error(`[ERROR] ${timestamp} ${message}`, ...args);
+    writeLog('ERROR', message, ...args);
   }
 }
 
@@ -36,8 +76,7 @@ export function error(message: string, ...args: unknown[]): void {
  */
 export function warn(message: string, ...args: unknown[]): void {
   if (logLevel >= LogLevel.WARN) {
-    const timestamp = new Date().toISOString();
-    console.warn(`[WARN] ${timestamp} ${message}`, ...args);
+    writeLog('WARN', message, ...args);
   }
 }
 
@@ -46,8 +85,7 @@ export function warn(message: string, ...args: unknown[]): void {
  */
 export function info(message: string, ...args: unknown[]): void {
   if (logLevel >= LogLevel.INFO) {
-    const timestamp = new Date().toISOString();
-    console.log(`[INFO] ${timestamp} ${message}`, ...args);
+    writeLog('INFO', message, ...args);
   }
 }
 
@@ -56,8 +94,7 @@ export function info(message: string, ...args: unknown[]): void {
  */
 export function debug(message: string, ...args: unknown[]): void {
   if (logLevel >= LogLevel.DEBUG) {
-    const timestamp = new Date().toISOString();
-    console.log(`[DEBUG] ${timestamp} ${message}`, ...args);
+    writeLog('DEBUG', message, ...args);
   }
 }
 

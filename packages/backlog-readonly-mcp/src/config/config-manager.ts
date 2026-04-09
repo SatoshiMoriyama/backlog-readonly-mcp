@@ -10,10 +10,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import type { BacklogConfig } from '../types/index.js';
 import * as logger from '../utils/logger.js';
+import { WhitelistManager } from './whitelist-manager.js';
 
 export class ConfigManager {
   private static instance: ConfigManager;
   private _config: BacklogConfig | null = null;
+  private whitelistManager: WhitelistManager | null = null;
 
   private constructor() {}
 
@@ -51,6 +53,7 @@ export class ConfigManager {
         BACKLOG_DEFAULT_PROJECT: process.env.BACKLOG_DEFAULT_PROJECT,
         BACKLOG_MAX_RETRIES: process.env.BACKLOG_MAX_RETRIES,
         BACKLOG_TIMEOUT: process.env.BACKLOG_TIMEOUT,
+        BACKLOG_PROJECT_WHITELIST: process.env.BACKLOG_PROJECT_WHITELIST,
       };
 
       // ワークスペース設定ファイルから設定を読み込み
@@ -154,13 +157,28 @@ export class ConfigManager {
         return value;
       };
 
+      // ホワイトリスト設定の読み込み（要件10: 設定ファイルのサポート）
+      const whitelistConfig = this.loadWhitelistConfig(
+        systemEnv.BACKLOG_PROJECT_WHITELIST,
+        workspaceConfig.BACKLOG_PROJECT_WHITELIST,
+      );
+
+      // WhitelistManagerの初期化
+      this.whitelistManager = new WhitelistManager(whitelistConfig);
+
       this._config = {
         domain: domain,
         apiKey: apiKey,
         defaultProject: defaultProject,
         maxRetries: validateMaxRetries(parsedMaxRetries),
         timeout: validateTimeout(parsedTimeout),
+        projectWhitelist: whitelistConfig,
       };
+
+      // デフォルトプロジェクトとホワイトリストの整合性検証（要件6）
+      if (defaultProject && this.whitelistManager.isWhitelistEnabled()) {
+        this.validateDefaultProjectInWhitelist(defaultProject);
+      }
 
       logger.info('設定の読み込みが完了しました', {
         domain: this._config.domain,
@@ -168,6 +186,8 @@ export class ConfigManager {
         defaultProject: this._config.defaultProject,
         maxRetries: this._config.maxRetries,
         timeout: this._config.timeout,
+        hasWhitelist: !!whitelistConfig,
+        whitelistCount: whitelistConfig?.length ?? 0,
         configSource: existsSync(configPath)
           ? 'ワークスペース + 環境変数'
           : '環境変数のみ',
@@ -212,6 +232,87 @@ export class ConfigManager {
   public reset(): void {
     logger.debug('設定をリセットしました');
     this._config = null;
+    this.whitelistManager = null;
+  }
+
+  /**
+   * ホワイトリスト設定を読み込み
+   * 環境変数を優先し、なければ設定ファイルから読み込む
+   * 要件10.2: 環境変数と設定ファイルの両方に設定がある場合は環境変数を優先
+   *
+   * @param envWhitelist 環境変数からのホワイトリスト
+   * @param fileWhitelist 設定ファイルからのホワイトリスト
+   * @returns パースされたホワイトリスト配列、または undefined
+   */
+  private loadWhitelistConfig(
+    envWhitelist?: string,
+    fileWhitelist?: string,
+  ): string[] | undefined {
+    // 要件10.2: 環境変数を優先
+    const whitelistStr = envWhitelist || fileWhitelist;
+
+    if (!whitelistStr || whitelistStr.trim().length === 0) {
+      return undefined;
+    }
+
+    // 要件1.2, 1.3: カンマ区切りで分割し、空白を除去して正規化
+    const whitelist = whitelistStr
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+
+    if (whitelist.length === 0) {
+      return undefined;
+    }
+
+    // 要件8.1, 8.4: ホワイトリストの内容をログ出力（マスキング不要）
+    logger.info(
+      `プロジェクトホワイトリストを読み込みました: ${whitelist.length}件`,
+      {
+        source: envWhitelist ? '環境変数' : '設定ファイル',
+        projects: whitelist,
+      },
+    );
+
+    return whitelist;
+  }
+
+  /**
+   * デフォルトプロジェクトがホワイトリストに含まれているか検証
+   * 含まれていない場合はエラーログを出力し、例外をスロー
+   * 要件6.1-6.7: デフォルトプロジェクトとホワイトリストの整合性検証
+   *
+   * @param defaultProject デフォルトプロジェクト
+   */
+  private validateDefaultProjectInWhitelist(defaultProject: string): void {
+    if (!this.whitelistManager) {
+      return;
+    }
+
+    // 要件6.2: ホワイトリストが無効の場合は検証をスキップ
+    if (!this.whitelistManager.isWhitelistEnabled()) {
+      return;
+    }
+
+    // 要件6.5: プロジェクトキーとプロジェクトIDの両方の形式で検証
+    const isValid = this.whitelistManager.validateProjectAccess(defaultProject);
+
+    if (!isValid) {
+      // 要件6.3, 6.7: エラーログを出力
+      const errorMessage =
+        `デフォルトプロジェクト '${defaultProject}' はホワイトリストに含まれていません。` +
+        `\n\nBACKLOG_DEFAULT_PROJECT と BACKLOG_PROJECT_WHITELIST の設定を確認してください。` +
+        `\nデフォルトプロジェクトはホワイトリストに含まれている必要があります。`;
+
+      logger.error(errorMessage);
+
+      // 要件6.4: 設定読み込みエラーとして例外をスロー
+      throw new Error(errorMessage);
+    }
+
+    logger.info(
+      `デフォルトプロジェクト '${defaultProject}' はホワイトリストに含まれています`,
+    );
   }
 
   /**
@@ -249,8 +350,29 @@ export class ConfigManager {
       throw new Error(errorMessage);
     }
 
+    // デフォルトプロジェクトがホワイトリストに含まれていることを保証（念のための再確認）
+    // loadConfig()で既に検証済みだが、安全のため再確認
+    if (this.whitelistManager?.isWhitelistEnabled()) {
+      const isValid =
+        this.whitelistManager.validateProjectAccess(defaultProject);
+      if (!isValid) {
+        const errorMessage =
+          `デフォルトプロジェクト '${defaultProject}' はホワイトリストに含まれていません。` +
+          `設定を確認してください。`;
+        logger.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+    }
+
     logger.debug(`デフォルトプロジェクトを使用: ${defaultProject}`);
     return defaultProject;
+  }
+
+  /**
+   * WhitelistManagerを取得
+   */
+  public getWhitelistManager(): WhitelistManager | null {
+    return this.whitelistManager;
   }
 
   /**

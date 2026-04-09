@@ -243,31 +243,34 @@ export function registerIssueTools(
         if (resolvedProjectId) {
           const whitelistManager = configManager.getWhitelistManager();
           if (whitelistManager?.isWhitelistEnabled()) {
-            // プロジェクトIDの場合、プロジェクト情報を取得してキーも取得
+            // projectId には数値IDだけでなくプロジェクトキーが渡されることもあるため、
+            // /projects/{id or key} で実プロジェクト情報を解決して、
+            // 検証時にはIDとキーの両方を渡す
+            let validatedProjectId = resolvedProjectId;
             let projectKey: string | undefined;
-            if (/^\d+$/.test(resolvedProjectId)) {
-              try {
-                const project = await apiClient.get<{
-                  id: number;
-                  projectKey: string;
-                }>(`/projects/${resolvedProjectId}`);
-                projectKey = project.projectKey;
-              } catch (_error) {
-                // プロジェクト取得失敗時はIDのみで検証
-                projectKey = undefined;
-              }
+
+            try {
+              const project = await apiClient.get<{
+                id: number;
+                projectKey: string;
+              }>(`/projects/${encodeURIComponent(resolvedProjectId)}`);
+              validatedProjectId = String(project.id);
+              projectKey = project.projectKey;
+            } catch (_error) {
+              // プロジェクト取得失敗時は解決済み入力値のみで検証
+              projectKey = undefined;
             }
 
             const isAllowed = whitelistManager.validateProjectAccess(
-              resolvedProjectId,
+              validatedProjectId,
               projectKey,
             );
             if (!isAllowed) {
               throw new Error(
                 whitelistManager.createAccessDeniedMessage(
                   projectKey
-                    ? `${projectKey} (ID: ${resolvedProjectId})`
-                    : resolvedProjectId,
+                    ? `${projectKey} (ID: ${validatedProjectId})`
+                    : validatedProjectId,
                 ),
               );
             }

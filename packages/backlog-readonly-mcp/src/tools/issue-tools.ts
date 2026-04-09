@@ -562,43 +562,27 @@ export function registerIssueTools(
       const configManager = ConfigManager.getInstance();
 
       try {
-        // 課題キー形式の場合、プロジェクトキーを抽出してホワイトリスト検証
-        const projectKey = extractProjectKeyFromIssueKey(issueIdOrKey);
-        if (projectKey) {
-          const whitelistManager = configManager.getWhitelistManager();
-          if (whitelistManager?.isWhitelistEnabled()) {
-            const isAllowed =
-              whitelistManager.validateProjectAccess(projectKey);
-            if (!isAllowed) {
-              throw new Error(
-                whitelistManager.createAccessDeniedMessage(projectKey),
-              );
-            }
-          }
-        } else {
-          // 数値ID形式の場合、課題を取得してprojectIdで検証
-          const whitelistManager = configManager.getWhitelistManager();
-          if (whitelistManager?.isWhitelistEnabled()) {
-            const issue = await apiClient.get<BacklogIssue>(
-              `/issues/${encodeURIComponent(issueIdOrKey)}`,
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // 入力が課題IDでも課題キーでも、課題詳細から projectId / projectKey の両方を取得して検証する
+          const issue = await apiClient.get<BacklogIssue>(
+            `/issues/${encodeURIComponent(issueIdOrKey)}`,
+          );
+          const extractedProjectKey = extractProjectKeyFromIssueKey(
+            issue.issueKey,
+          );
+          const isAllowed = whitelistManager.validateProjectAccess(
+            String(issue.projectId),
+            extractedProjectKey ?? undefined,
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                extractedProjectKey
+                  ? `${extractedProjectKey} (ID: ${issue.projectId})`
+                  : String(issue.projectId),
+              ),
             );
-            // issueKeyからプロジェクトキーを抽出
-            const extractedProjectKey = extractProjectKeyFromIssueKey(
-              issue.issueKey,
-            );
-            const isAllowed = whitelistManager.validateProjectAccess(
-              String(issue.projectId),
-              extractedProjectKey ?? undefined,
-            );
-            if (!isAllowed) {
-              throw new Error(
-                whitelistManager.createAccessDeniedMessage(
-                  extractedProjectKey
-                    ? `${extractedProjectKey} (ID: ${issue.projectId})`
-                    : String(issue.projectId),
-                ),
-              );
-            }
           }
         }
 

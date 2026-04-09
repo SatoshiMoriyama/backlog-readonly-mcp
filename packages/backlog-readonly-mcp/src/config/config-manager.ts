@@ -158,9 +158,10 @@ export class ConfigManager {
       };
 
       // ホワイトリスト設定の読み込み（要件10: 設定ファイルのサポート）
+      // defaultProjectと同様に、設定ファイルを優先
       const whitelistConfig = this.loadWhitelistConfig(
-        systemEnv.BACKLOG_PROJECT_WHITELIST,
         workspaceConfig.BACKLOG_PROJECT_WHITELIST,
+        systemEnv.BACKLOG_PROJECT_WHITELIST,
       );
 
       // WhitelistManagerの初期化
@@ -237,19 +238,19 @@ export class ConfigManager {
 
   /**
    * ホワイトリスト設定を読み込み
-   * 環境変数を優先し、なければ設定ファイルから読み込む
-   * 要件10.2: 環境変数と設定ファイルの両方に設定がある場合は環境変数を優先
+   * 第1引数を優先し、なければ第2引数から読み込む
+   * 注: defaultProjectと同様に、設定ファイルを優先する設計に変更
    *
-   * @param envWhitelist 環境変数からのホワイトリスト
-   * @param fileWhitelist 設定ファイルからのホワイトリスト
+   * @param primaryWhitelist 優先する設定（設定ファイル）
+   * @param fallbackWhitelist フォールバック設定（環境変数）
    * @returns パースされたホワイトリスト配列、または undefined
    */
   private loadWhitelistConfig(
-    envWhitelist?: string,
-    fileWhitelist?: string,
+    primaryWhitelist?: string,
+    fallbackWhitelist?: string,
   ): string[] | undefined {
-    // 要件10.2: 環境変数を優先
-    const whitelistStr = envWhitelist || fileWhitelist;
+    // 第1引数を優先、なければ第2引数を使用
+    const whitelistStr = primaryWhitelist || fallbackWhitelist;
 
     if (!whitelistStr || whitelistStr.trim().length === 0) {
       return undefined;
@@ -269,7 +270,7 @@ export class ConfigManager {
     logger.info(
       `プロジェクトホワイトリストを読み込みました: ${whitelist.length}件`,
       {
-        source: envWhitelist ? '環境変数' : '設定ファイル',
+        source: primaryWhitelist ? '設定ファイル' : '環境変数',
         projects: whitelist,
       },
     );

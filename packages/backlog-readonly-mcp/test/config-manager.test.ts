@@ -35,6 +35,7 @@ describe('ConfigManager Property Tests', () => {
       BACKLOG_MAX_RETRIES: process.env.BACKLOG_MAX_RETRIES,
       BACKLOG_TIMEOUT: process.env.BACKLOG_TIMEOUT,
       BACKLOG_CONFIG_PATH: process.env.BACKLOG_CONFIG_PATH,
+      BACKLOG_PROJECT_WHITELIST: process.env.BACKLOG_PROJECT_WHITELIST,
     };
 
     // ConfigManagerをリセット
@@ -317,6 +318,136 @@ describe('ConfigManager Property Tests', () => {
       if (apiKey !== '*'.repeat(apiKey.length)) {
         expect(maskedKey1).not.toBe(apiKey);
       }
+    });
+  });
+
+  describe('ホワイトリスト機能', () => {
+    it('環境変数からホワイトリストを読み込む', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_PROJECT_WHITELIST = 'PROJ1,PROJ2,12345';
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+      const config = manager.loadConfig();
+
+      expect(config.projectWhitelist).toEqual(['PROJ1', 'PROJ2', '12345']);
+      expect(manager.getWhitelistManager()?.isWhitelistEnabled()).toBe(true);
+    });
+
+    it('ワークスペース設定ファイルからホワイトリストを読み込む', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_CONFIG_PATH = testConfigPath;
+
+      writeFileSync(
+        testConfigPath,
+        'BACKLOG_PROJECT_WHITELIST=PROJ1,PROJ2,12345',
+      );
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+      const config = manager.loadConfig();
+
+      expect(config.projectWhitelist).toEqual(['PROJ1', 'PROJ2', '12345']);
+      expect(manager.getWhitelistManager()?.isWhitelistEnabled()).toBe(true);
+    });
+
+    it('環境変数のホワイトリストが設定ファイルより優先される', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_PROJECT_WHITELIST = 'ENV_PROJ';
+      process.env.BACKLOG_CONFIG_PATH = testConfigPath;
+
+      writeFileSync(testConfigPath, 'BACKLOG_PROJECT_WHITELIST=FILE_PROJ');
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+      const config = manager.loadConfig();
+
+      expect(config.projectWhitelist).toEqual(['ENV_PROJ']);
+    });
+
+    it('ホワイトリスト設定のカンマ区切りと空白除去が正しく行われる', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_PROJECT_WHITELIST = ' PROJ1 , PROJ2 , 12345 ';
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+      const config = manager.loadConfig();
+
+      expect(config.projectWhitelist).toEqual(['PROJ1', 'PROJ2', '12345']);
+    });
+
+    it('ホワイトリスト未設定時は無効になる', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+      const config = manager.loadConfig();
+
+      expect(config.projectWhitelist).toBeUndefined();
+      expect(manager.getWhitelistManager()?.isWhitelistEnabled()).toBe(false);
+    });
+
+    it('デフォルトプロジェクトがホワイトリストに含まれている場合は正常に読み込む', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_DEFAULT_PROJECT = 'PROJ1';
+      process.env.BACKLOG_PROJECT_WHITELIST = 'PROJ1,PROJ2';
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+
+      expect(() => manager.loadConfig()).not.toThrow();
+    });
+
+    it('デフォルトプロジェクトがホワイトリストに含まれていない場合はエラー', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_DEFAULT_PROJECT = 'PROJ3';
+      process.env.BACKLOG_PROJECT_WHITELIST = 'PROJ1,PROJ2';
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+
+      expect(() => manager.loadConfig()).toThrow(
+        /デフォルトプロジェクト 'PROJ3' はホワイトリストに含まれていません/,
+      );
+    });
+
+    it('ホワイトリスト無効時はデフォルトプロジェクト検証をスキップ', () => {
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_DEFAULT_PROJECT = 'ANYPROJ';
+      // BACKLOG_PROJECT_WHITELIST未設定
+
+      const manager = ConfigManager.getInstance();
+      manager.reset();
+
+      expect(() => manager.loadConfig()).not.toThrow();
+    });
+
+    it('デフォルトプロジェクト検証をプロジェクトキーとIDの両方の形式で実行', () => {
+      // プロジェクトキーでの検証
+      process.env.BACKLOG_DOMAIN = 'test.backlog.com';
+      process.env.BACKLOG_API_KEY = 'test-api-key';
+      process.env.BACKLOG_DEFAULT_PROJECT = 'PROJ1';
+      process.env.BACKLOG_PROJECT_WHITELIST = 'PROJ1,PROJ2';
+
+      let manager = ConfigManager.getInstance();
+      manager.reset();
+      expect(() => manager.loadConfig()).not.toThrow();
+
+      // プロジェクトIDでの検証
+      process.env.BACKLOG_DEFAULT_PROJECT = '12345';
+      process.env.BACKLOG_PROJECT_WHITELIST = '12345,67890';
+
+      manager = ConfigManager.getInstance();
+      manager.reset();
+      expect(() => manager.loadConfig()).not.toThrow();
     });
   });
 });

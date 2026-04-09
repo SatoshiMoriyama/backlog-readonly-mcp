@@ -57,11 +57,20 @@ export function registerProjectTools(
         params,
       );
 
+      // ホワイトリストでフィルタリング（要件3）
+      const configManager = ConfigManager.getInstance();
+      const whitelistManager = configManager.getWhitelistManager();
+      const filteredProjects = whitelistManager
+        ? whitelistManager.filterProjects(projects)
+        : projects;
+
       return {
         success: true,
-        data: projects,
-        count: projects.length,
-        message: `${projects.length}件のプロジェクトを取得しました`,
+        data: filteredProjects,
+        count: filteredProjects.length,
+        message: `${filteredProjects.length}件のプロジェクトを取得しました`,
+        isFiltered: whitelistManager?.isWhitelistEnabled() || false,
+        originalCount: projects.length,
       };
     },
   );
@@ -92,9 +101,26 @@ export function registerProjectTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        // プロジェクト情報を取得
         const project = await apiClient.get<BacklogProject>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`,
         );
+
+        // ホワイトリスト検証（要件4）- プロジェクトキーとIDの両方で検証
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          const isAllowed = whitelistManager.validateProjectAccess(
+            project.projectKey,
+            String(project.id),
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                `${project.projectKey} (ID: ${project.id})`,
+              ),
+            );
+          }
+        }
 
         const isDefaultProject =
           !projectIdOrKey && configManager.hasDefaultProject();
@@ -144,6 +170,28 @@ export function registerProjectTools(
       try {
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
+
+        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // プロジェクト情報を取得してキーとIDを両方取得
+          const project = await apiClient.get<{
+            id: number;
+            projectKey: string;
+          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
+
+          const isAllowed = whitelistManager.validateProjectAccess(
+            project.projectKey,
+            String(project.id),
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                `${project.projectKey} (ID: ${project.id})`,
+              ),
+            );
+          }
+        }
 
         const users = await apiClient.get<BacklogUser[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/users`,

@@ -71,6 +71,28 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // プロジェクト情報を取得してキーとIDを両方取得
+          const project = await apiClient.get<{
+            id: number;
+            projectKey: string;
+          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
+
+          const isAllowed = whitelistManager.validateProjectAccess(
+            project.projectKey,
+            String(project.id),
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                `${project.projectKey} (ID: ${project.id})`,
+              ),
+            );
+          }
+        }
+
         const statuses = await apiClient.get<Status[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/statuses`,
         );
@@ -125,6 +147,28 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // プロジェクト情報を取得してキーとIDを両方取得
+          const project = await apiClient.get<{
+            id: number;
+            projectKey: string;
+          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
+
+          const isAllowed = whitelistManager.validateProjectAccess(
+            project.projectKey,
+            String(project.id),
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                `${project.projectKey} (ID: ${project.id})`,
+              ),
+            );
+          }
+        }
+
         const resolutions = await apiClient.get<Resolution[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/resolutions`,
         );
@@ -178,6 +222,28 @@ export function registerMasterDataTools(
       try {
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
+
+        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // プロジェクト情報を取得してキーとIDを両方取得
+          const project = await apiClient.get<{
+            id: number;
+            projectKey: string;
+          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
+
+          const isAllowed = whitelistManager.validateProjectAccess(
+            project.projectKey,
+            String(project.id),
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                `${project.projectKey} (ID: ${project.id})`,
+              ),
+            );
+          }
+        }
 
         const categories = await apiClient.get<Category[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/categories`,

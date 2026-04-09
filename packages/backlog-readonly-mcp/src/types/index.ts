@@ -14,6 +14,8 @@ export interface BacklogConfig {
   maxRetries: number;
   /** タイムアウト（ミリ秒） */
   timeout: number;
+  /** プロジェクトホワイトリスト (オプション) */
+  projectWhitelist?: string[];
 }
 
 // Backlog API レスポンス型

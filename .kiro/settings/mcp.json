@@ -17,6 +17,7 @@
         "BACKLOG_DOMAIN": "${BACKLOG_DOMAIN}",
         "BACKLOG_API_KEY": "${BACKLOG_API_KEY}",
         "BACKLOG_CONFIG_PATH": "${workspaceFolder}/.backlog-mcp.env",
+        "BACKLOG_PROJECT_WHITELIST": "${BACKLOG_PROJECT_WHITELIST}",
         "FASTMCP_LOG_LEVEL": "DEBUG",
         "NODE_ENV": "development"
       },
@@ -27,7 +28,8 @@
         "get_projects",
         "get_wikis",
         "get_project",
-        "get_issues"
+        "get_issues",
+        "get_wiki"
       ]
     }
   }

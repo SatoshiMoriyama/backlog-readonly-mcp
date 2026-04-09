@@ -294,7 +294,11 @@ export class ConfigManager {
       return;
     }
 
-    // 要件6.5: プロジェクトキーとプロジェクトIDの両方の形式で検証
+    // 起動時検証の制限事項：
+    // デフォルトプロジェクトの検証は、設定された文字列そのものがホワイトリストに含まれているかをチェックします。
+    // 例：BACKLOG_DEFAULT_PROJECT="PROJ1" の場合、BACKLOG_PROJECT_WHITELIST にも "PROJ1" が必要
+    //     （"12345" のようなIDのみでは起動時エラーになります）
+    // これは起動時にAPI呼び出しを行わない設計によるものです。
     const isValid = this.whitelistManager.validateProjectAccess(defaultProject);
 
     if (!isValid) {
@@ -302,7 +306,9 @@ export class ConfigManager {
       const errorMessage =
         `デフォルトプロジェクト '${defaultProject}' はホワイトリストに含まれていません。` +
         `\n\nBACKLOG_DEFAULT_PROJECT と BACKLOG_PROJECT_WHITELIST の設定を確認してください。` +
-        `\nデフォルトプロジェクトはホワイトリストに含まれている必要があります。`;
+        `\nデフォルトプロジェクトはホワイトリストに含まれている必要があります。` +
+        `\n注意: デフォルトプロジェクトに指定した文字列そのもの（キーならキー、IDならID）が` +
+        `ホワイトリストに含まれている必要があります。`;
 
       logger.error(errorMessage);
 

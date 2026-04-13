@@ -10,6 +10,7 @@ Model Context Protocol（MCP）サーバーです。
 
 - **読み取り専用**: データの変更・作成は一切行わず、GET リクエストのみを使用
 - **セキュリティ重視**: API キーの安全な管理とマスキング機能
+- **プロジェクトホワイトリスト**: 特定のプロジェクトのみアクセス可能にする制限機能
 - **ワークスペース対応**: プロジェクトごとに異なる設定を自動適用
 - **デフォルトプロジェクト**: よく使うプロジェクトを設定して効率的に作業
 - **包括的なツール**: プロジェクト、課題、ユーザー、Wiki、マスタデータの取得
@@ -44,6 +45,11 @@ Model Context Protocol（MCP）サーバーです。
 - `get_wikis`: Wiki 一覧取得
 - `get_wiki`: 特定 Wiki ページ取得
 
+### アクティビティ関連
+- `get_space_activities`: スペース全体（全プロジェクト横断）のアクティビティ取得
+- `get_project_activities`: 特定プロジェクトのアクティビティ取得（デフォルトプロジェクト対応）
+- `get_user_activities`: 特定ユーザーのアクティビティ取得
+
 ### マスタデータ関連
 - `get_priorities`: 優先度の一覧取得
 - `get_statuses`: ステータス一覧取得
@@ -69,9 +75,10 @@ export BACKLOG_DOMAIN="your-company.backlog.com"
 
 **オプション環境変数**:
 ```bash
-export BACKLOG_DEFAULT_PROJECT="MYPROJ"  # デフォルトプロジェクトキー
-export BACKLOG_MAX_RETRIES="3"           # リトライ回数
-export BACKLOG_TIMEOUT="30000"           # タイムアウト（ms）
+export BACKLOG_DEFAULT_PROJECT="MYPROJ"           # デフォルトプロジェクトキー
+export BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2"   # アクセス許可プロジェクト（ホワイトリスト）
+export BACKLOG_MAX_RETRIES="3"                    # リトライ回数
+export BACKLOG_TIMEOUT="30000"                    # タイムアウト（ms）
 ```
 
 ### ワークスペース固有の設定
@@ -86,6 +93,116 @@ BACKLOG_DEFAULT_PROJECT="MYPROJ"
 ```
 
 **注意**: `.backlog-mcp.env` ファイルは `.gitignore` に追加してコミット対象外にしてください。
+
+## プロジェクトホワイトリスト機能
+
+環境変数 `BACKLOG_PROJECT_WHITELIST` を設定することで、アクセス可能なプロジェクトを制限できます。
+
+### 設定方法
+
+**環境変数で設定**:
+```bash
+export BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2,12345"
+```
+
+**ワークスペース設定ファイルで設定**:
+```bash
+# .backlog-mcp.env
+BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2,12345"
+```
+
+**設定形式**:
+- カンマ区切りで複数のプロジェクトを指定
+- プロジェクトキー（例: `PROJ1`）とプロジェクトID（例: `12345`）の両方をサポート
+- **プロジェクトキーだけ**または**IDだけ**を設定すれば、どちらの形式でアクセスしても検証が通ります
+- 空白は自動的に除去されます
+
+### 動作
+
+**ホワイトリスト有効時**:
+- 指定されたプロジェクトのみにアクセス可能
+- ホワイトリスト外のプロジェクトへのアクセスは拒否される
+- プロジェクト横断で取得するツール（`get_projects`, `get_issues`, `get_recent_wikis`）は、結果が自動的にフィルタリングされます
+- 単一プロジェクトにアクセスするツールは、アクセス前に検証が行われます
+- 課題、Wiki、マスタデータなど、すべてのプロジェクト関連ツールで検証が行われます
+
+**ホワイトリスト未設定時**（デフォルト）:
+- すべてのプロジェクトにアクセス可能（後方互換性）
+
+### デフォルトプロジェクトとの連携
+
+デフォルトプロジェクト（`BACKLOG_DEFAULT_PROJECT`）を設定している場合：
+
+- デフォルトプロジェクトは必ずホワイトリストに含まれている必要があります
+- ホワイトリストに含まれていない場合、起動時にエラーが発生します
+
+> **注意**: 起動時の検証は API を呼び出さず、設定された文字列をそのまま照合します。
+> `BACKLOG_DEFAULT_PROJECT` と `BACKLOG_PROJECT_WHITELIST` は**同じ形式**（キーならキー、IDならID）で揃えてください。
+> 例えば `BACKLOG_DEFAULT_PROJECT="PROJ1"`（キー）に対して `BACKLOG_PROJECT_WHITELIST="12345"`（ID）のように別形式で設定すると、起動時エラーになります。
+
+**正しい設定例**:
+```bash
+# キー形式で統一
+export BACKLOG_DEFAULT_PROJECT="PROJ1"
+export BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2"  # 同じキー形式で PROJ1 を含む
+
+# ID形式で統一する場合
+export BACKLOG_DEFAULT_PROJECT="12345"
+export BACKLOG_PROJECT_WHITELIST="12345,67890"  # 同じID形式で 12345 を含む
+```
+
+**エラーになる設定例**:
+```bash
+export BACKLOG_DEFAULT_PROJECT="PROJ1"
+export BACKLOG_PROJECT_WHITELIST="PROJ2,PROJ3"  # PROJ1が含まれていない → エラー
+
+# 形式が混在する場合もエラー
+export BACKLOG_DEFAULT_PROJECT="PROJ1"          # キー形式
+export BACKLOG_PROJECT_WHITELIST="12345,67890"  # ID形式 → 文字列不一致でエラー
+```
+
+### エラーメッセージ
+
+ホワイトリスト外のプロジェクトにアクセスしようとすると、以下のようなエラーメッセージが表示されます：
+
+```
+プロジェクト 'PROJ3' へのアクセスは許可されていません。
+このプロジェクトはホワイトリストに含まれていません。
+
+アクセスを許可するには、BACKLOG_PROJECT_WHITELIST 環境変数に追加してください。
+例: export BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2,PROJ3"
+```
+
+### 使用例
+
+あるプロジェクトのキーが `MYPROJECT`、IDが `12345` だとします。
+
+**プロジェクトキーで指定（推奨）**:
+```bash
+export BACKLOG_PROJECT_WHITELIST="MYPROJECT"
+# このプロジェクトにはキー (MYPROJECT) でもID (12345) でもアクセス可能
+```
+
+**プロジェクトIDで指定**:
+```bash
+export BACKLOG_PROJECT_WHITELIST="12345"
+# このプロジェクトにはキー (MYPROJECT) でもID (12345) でもアクセス可能
+```
+
+**複数プロジェクトを指定**:
+```bash
+export BACKLOG_PROJECT_WHITELIST="PROJECT_A,PROJECT_B"
+```
+
+**プロジェクトキーとIDの混在**:
+```bash
+export BACKLOG_PROJECT_WHITELIST="PROJ1,12345,PROJ3"
+```
+
+**ホワイトリストを無効化**:
+```bash
+unset BACKLOG_PROJECT_WHITELIST  # 環境変数を削除
+```
 
 ### MCPクライアント設定
 
@@ -126,6 +243,40 @@ await callTool("get_issue", { issueKey: "MYPROJ-123" });
 await callTool("get_projects", {});
 ```
 
+### デフォルトプロジェクトのアクティビティを取得
+```typescript
+await callTool("get_project_activities", {});
+```
+
+### 特定プロジェクトの昨日分アクティビティを取得
+```typescript
+await callTool("get_project_activities", {
+  projectIdOrKey: "MYPROJ",
+  since: "2024-01-14",
+  until: "2024-01-14",
+  count: 100
+});
+```
+
+### 自分のアクティビティを取得
+```typescript
+// まず自分のユーザーIDを取得
+const me = await callTool("get_myself", {});
+// 取得したIDで自分のアクティビティを取得
+await callTool("get_user_activities", {
+  userId: me.data.id,
+  count: 20
+});
+```
+
+### 課題操作のみに絞ってスペース全体のアクティビティを取得
+```typescript
+await callTool("get_space_activities", {
+  activityTypeId: [1, 2, 3, 4],  // 課題の追加・更新・コメント・削除
+  count: 50
+});
+```
+
 ## 開発（実装完了後）
 
 ### 依存関係のインストール
@@ -154,6 +305,7 @@ npm run build
 - ログ出力時に API キーを自動的にマスキング
 - GET リクエストのみを使用し、データ変更は一切行わない
 - 最小限の権限で Backlog API にアクセス
+- プロジェクトホワイトリストによるアクセス制限（オプション）
 
 ## ライセンス
 

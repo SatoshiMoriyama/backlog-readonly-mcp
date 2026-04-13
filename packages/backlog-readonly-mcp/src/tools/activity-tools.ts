@@ -78,7 +78,48 @@ function buildActivityParams(
 }
 
 /**
+ * UTC日時文字列をJST（+09:00）の文字列に変換する
+ * 例: "2026-04-13T10:39:46Z" → "2026-04-13T19:39:46+09:00"
+ */
+function toJSTString(utcString: string): string {
+  const d = new Date(utcString);
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}T${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}:${pad(jst.getUTCSeconds())}+09:00`;
+}
+
+/**
+ * アクティビティ配列の created フィールドをJSTに変換する
+ */
+function convertActivitiesToJST(
+  activities: BacklogActivity[],
+): BacklogActivity[] {
+  return activities.map((a) => ({
+    ...a,
+    created: toJSTString(a.created),
+  }));
+}
+
+/**
+ * 日付文字列をJST（UTC+9）として解釈してDateオブジェクトを返す
+ * タイムゾーン指定済み（末尾Z や +09:00 など）の場合はそのまま解釈する
+ */
+function parseDateAsJST(dateStr: string): Date {
+  // タイムゾーン情報がすでに含まれている場合はそのまま解釈
+  if (dateStr.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+    return new Date(dateStr);
+  }
+  // タイムゾーンなし → JST（+09:00）として解釈
+  const normalized =
+    dateStr.length === 10
+      ? `${dateStr}T00:00:00+09:00` // YYYY-MM-DD → JSTの0時
+      : `${dateStr}+09:00`; // YYYY-MM-DDTHH:mm:ss → JST
+  return new Date(normalized);
+}
+
+/**
  * since/until による日付フィルタリングを適用するヘルパー
+ * since/until はJST基準で解釈します
  */
 function filterByDate(
   activities: BacklogActivity[],
@@ -87,13 +128,14 @@ function filterByDate(
 ): BacklogActivity[] {
   if (!since && !until) return activities;
 
-  const sinceMs = since ? new Date(since).getTime() : undefined;
+  const sinceMs = since ? parseDateAsJST(since).getTime() : undefined;
   let untilMs: number | undefined;
   if (until) {
-    const d = new Date(until);
-    // YYYY-MM-DD のみ指定の場合は当日の23:59:59.999まで含める
+    const d = parseDateAsJST(until);
+    // YYYY-MM-DD のみ指定の場合は当日JST 23:59:59.999まで含める
+    // parseDateAsJSTでJST 0時に変換済みなので、+24h-1ms でJST末尾になる
     if (until.length === 10) {
-      d.setHours(23, 59, 59, 999);
+      d.setTime(d.getTime() + 86399999);
     }
     untilMs = d.getTime();
   }
@@ -174,7 +216,9 @@ export function registerActivityTools(
         }
 
         // 日付フィルタリング
-        const filtered = filterByDate(activities, since, until);
+        const filtered = convertActivitiesToJST(
+          filterByDate(activities, since, until),
+        );
 
         return {
           success: true,
@@ -273,7 +317,9 @@ export function registerActivityTools(
         );
 
         // 日付フィルタリング
-        const filtered = filterByDate(activities, since, until);
+        const filtered = convertActivitiesToJST(
+          filterByDate(activities, since, until),
+        );
 
         const isDefaultProject =
           !projectIdOrKey && configManager.hasDefaultProject();
@@ -346,7 +392,9 @@ export function registerActivityTools(
         }
 
         // 日付フィルタリング
-        const filtered = filterByDate(activities, since, until);
+        const filtered = convertActivitiesToJST(
+          filterByDate(activities, since, until),
+        );
 
         return {
           success: true,

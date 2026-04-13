@@ -203,6 +203,42 @@ export interface Notification {
   resourceAlreadyRead: boolean;
 }
 
+export interface BacklogActivityContent {
+  id?: number;
+  key_id?: number;
+  summary?: string;
+  description?: string;
+  comment?: {
+    id: number;
+    content: string;
+  };
+  changes?: Array<{
+    field: string;
+    new_value: string;
+    old_value: string;
+    type: string;
+  }>;
+  name?: string;
+  content?: string;
+}
+
+export interface BacklogActivity {
+  id: number;
+  project: {
+    id: number;
+    projectKey: string;
+    name: string;
+    chartEnabled: boolean;
+    subtaskingEnabled: boolean;
+    archived: boolean;
+  };
+  type: number;
+  content: BacklogActivityContent;
+  notifications: Notification[];
+  createdUser: BacklogUser;
+  created: string;
+}
+
 export interface BacklogWiki {
   id: number;
   projectId: number;

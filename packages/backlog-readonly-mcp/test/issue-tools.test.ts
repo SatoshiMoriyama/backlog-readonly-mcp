@@ -114,6 +114,7 @@ describe('課題ツール', () => {
       hasDefaultProject: vi.fn().mockReturnValue(true),
       getDefaultProject: vi.fn().mockReturnValue('TEST'),
       resolveProjectIdOrKey: vi.fn().mockImplementation((id) => id || 'TEST'),
+      getWhitelistManager: vi.fn().mockReturnValue(null), // ホワイトリスト無効
     } as unknown as ConfigManager;
 
     // ConfigManager.getInstanceをモック

@@ -84,6 +84,8 @@ describe('プロジェクトツール', () => {
         data: mockProjects,
         count: 1,
         message: '1件のプロジェクトを取得しました',
+        isFiltered: false,
+        originalCount: 1,
       });
     });
 
@@ -97,6 +99,8 @@ describe('プロジェクトツール', () => {
         data: mockProjects,
         count: 1,
         message: '1件のプロジェクトを取得しました',
+        isFiltered: false,
+        originalCount: 1,
       });
     });
   });

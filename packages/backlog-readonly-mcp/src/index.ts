@@ -20,6 +20,7 @@ import {
 // 必要なモジュールをインポート
 import { BacklogApiClient } from './client/backlog-api-client.js';
 import { ConfigManager } from './config/config-manager.js';
+import { registerActivityTools } from './tools/activity-tools.js';
 import { registerIssueTools } from './tools/issue-tools.js';
 import { registerMasterDataTools } from './tools/master-data-tools.js';
 import { registerProjectTools } from './tools/project-tools.js';
@@ -95,6 +96,9 @@ async function main() {
 
     // マスタデータ関連ツールの登録
     registerMasterDataTools(toolRegistry, apiClient);
+
+    // アクティビティ関連ツールの登録
+    registerActivityTools(toolRegistry, apiClient);
 
     const server = new Server(
       {

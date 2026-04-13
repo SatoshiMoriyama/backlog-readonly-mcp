@@ -45,6 +45,11 @@ Model Context Protocol（MCP）サーバーです。
 - `get_wikis`: Wiki 一覧取得
 - `get_wiki`: 特定 Wiki ページ取得
 
+### アクティビティ関連
+- `get_space_activities`: スペース全体（全プロジェクト横断）のアクティビティ取得
+- `get_project_activities`: 特定プロジェクトのアクティビティ取得（デフォルトプロジェクト対応）
+- `get_user_activities`: 特定ユーザーのアクティビティ取得
+
 ### マスタデータ関連
 - `get_priorities`: 優先度の一覧取得
 - `get_statuses`: ステータス一覧取得
@@ -223,6 +228,40 @@ await callTool("get_issue", { issueKey: "MYPROJ-123" });
 ### プロジェクト一覧を取得
 ```typescript
 await callTool("get_projects", {});
+```
+
+### デフォルトプロジェクトのアクティビティを取得
+```typescript
+await callTool("get_project_activities", {});
+```
+
+### 特定プロジェクトの昨日分アクティビティを取得
+```typescript
+await callTool("get_project_activities", {
+  projectIdOrKey: "MYPROJ",
+  since: "2024-01-14",
+  until: "2024-01-14",
+  count: 100
+});
+```
+
+### 自分のアクティビティを取得
+```typescript
+// まず自分のユーザーIDを取得
+const me = await callTool("get_myself", {});
+// 取得したIDで自分のアクティビティを取得
+await callTool("get_user_activities", {
+  userId: me.data.id,
+  count: 20
+});
+```
+
+### 課題操作のみに絞ってスペース全体のアクティビティを取得
+```typescript
+await callTool("get_space_activities", {
+  activityTypeId: [1, 2, 3, 4],  // 課題の追加・更新・コメント・削除
+  count: 50
+});
 ```
 
 ## 開発（実装完了後）

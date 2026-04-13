@@ -112,55 +112,24 @@ export function registerMasterDataTools(
     {
       name: 'get_resolutions',
       description:
-        '完了理由一覧を取得します（読み取り専用）。プロジェクトIDまたはキーを省略した場合、デフォルトプロジェクトを使用します。',
+        '完了理由一覧を取得します（読み取り専用）。完了理由はスペース全体で共通のマスタデータです。',
       inputSchema: {
         type: 'object',
-        properties: {
-          projectIdOrKey: {
-            type: 'string',
-            description:
-              'プロジェクトIDまたはプロジェクトキー（例: "MYPROJ" または "123"）。省略時はデフォルトプロジェクトを使用。',
-          },
-        },
+        properties: {},
         required: [],
       },
     },
-    async (args) => {
-      const { projectIdOrKey } = args as { projectIdOrKey?: string };
-      const configManager = ConfigManager.getInstance();
-
+    async () => {
       try {
-        const resolvedProjectIdOrKey =
-          configManager.resolveProjectIdOrKey(projectIdOrKey);
-
-        await assertProjectWhitelistAllowed(
-          apiClient,
-          configManager,
-          resolvedProjectIdOrKey,
-        );
-
-        const resolutions = await apiClient.get<Resolution[]>(
-          `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/resolutions`,
-        );
-
-        const isDefaultProject =
-          !projectIdOrKey && configManager.hasDefaultProject();
+        const resolutions = await apiClient.get<Resolution[]>('/resolutions');
 
         return {
           success: true,
           data: resolutions,
           count: resolutions.length,
-          message: `${resolutions.length}件の完了理由を取得しました${isDefaultProject ? '（デフォルトプロジェクト）' : ''}`,
-          isDefaultProject,
+          message: `${resolutions.length}件の完了理由を取得しました`,
         };
       } catch (error) {
-        if (
-          error instanceof Error &&
-          (error.message.includes('デフォルトプロジェクト') ||
-            error.message.includes('ホワイトリスト'))
-        ) {
-          throw error;
-        }
         throw new Error(
           `完了理由一覧の取得に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
         );

@@ -7,6 +7,7 @@
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
 import { ConfigManager } from '../config/config-manager.js';
 import type { BacklogProject, BacklogUser } from '../types/index.js';
+import { assertProjectWhitelistAllowed } from '../utils/whitelist-helpers.js';
 import type { ToolRegistry } from './tool-registry.js';
 
 /**
@@ -106,7 +107,8 @@ export function registerProjectTools(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`,
         );
 
-        // ホワイトリスト検証（要件4）- プロジェクトキーとIDの両方で検証
+        // get_project は既にプロジェクト情報を取得済みのため、assertProjectWhitelistAllowed を
+        // 使わずインラインで検証する（ヘルパーを使うと /projects/{id} を二重に呼ぶことになる）
         const whitelistManager = configManager.getWhitelistManager();
         if (whitelistManager?.isWhitelistEnabled()) {
           const isAllowed = whitelistManager.validateProjectAccess(
@@ -134,7 +136,8 @@ export function registerProjectTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }
@@ -171,27 +174,11 @@ export function registerProjectTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
-        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
-        const whitelistManager = configManager.getWhitelistManager();
-        if (whitelistManager?.isWhitelistEnabled()) {
-          // プロジェクト情報を取得してキーとIDを両方取得
-          const project = await apiClient.get<{
-            id: number;
-            projectKey: string;
-          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
-
-          const isAllowed = whitelistManager.validateProjectAccess(
-            project.projectKey,
-            String(project.id),
-          );
-          if (!isAllowed) {
-            throw new Error(
-              whitelistManager.createAccessDeniedMessage(
-                `${project.projectKey} (ID: ${project.id})`,
-              ),
-            );
-          }
-        }
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
 
         const users = await apiClient.get<BacklogUser[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/users`,
@@ -210,7 +197,8 @@ export function registerProjectTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }

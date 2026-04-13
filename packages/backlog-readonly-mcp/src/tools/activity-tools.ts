@@ -279,6 +279,10 @@ export function registerActivityTools(
         }
 
         // ホワイトリスト検証
+        // 注: assertProjectWhitelistAllowed ではなくインライン実装を使用している。
+        // アクティビティ取得はプロジェクトが存在しない場合でも試みたいケースがあるため、
+        // /projects/{id} の取得失敗時はキー不明のままIDのみで検証を続行するソフトフォールバック設計。
+        // assertProjectWhitelistAllowed はAPI失敗時に例外をそのまま伝播させるため使用していない。
         const whitelistManager = configManager.getWhitelistManager();
         if (whitelistManager?.isWhitelistEnabled()) {
           let validatedProjectId = resolvedProjectId;
@@ -292,6 +296,7 @@ export function registerActivityTools(
             validatedProjectId = String(project.id);
             projectKey = project.projectKey;
           } catch (_error) {
+            // プロジェクト取得失敗時はIDのみで検証を続行
             projectKey = undefined;
           }
 

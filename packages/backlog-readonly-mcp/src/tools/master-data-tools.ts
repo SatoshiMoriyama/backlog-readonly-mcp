@@ -7,6 +7,7 @@
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
 import { ConfigManager } from '../config/config-manager.js';
 import type { Category, Priority, Resolution, Status } from '../types/index.js';
+import { assertProjectWhitelistAllowed } from '../utils/whitelist-helpers.js';
 import type { ToolRegistry } from './tool-registry.js';
 
 /**
@@ -71,27 +72,11 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
-        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
-        const whitelistManager = configManager.getWhitelistManager();
-        if (whitelistManager?.isWhitelistEnabled()) {
-          // プロジェクト情報を取得してキーとIDを両方取得
-          const project = await apiClient.get<{
-            id: number;
-            projectKey: string;
-          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
-
-          const isAllowed = whitelistManager.validateProjectAccess(
-            project.projectKey,
-            String(project.id),
-          );
-          if (!isAllowed) {
-            throw new Error(
-              whitelistManager.createAccessDeniedMessage(
-                `${project.projectKey} (ID: ${project.id})`,
-              ),
-            );
-          }
-        }
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
 
         const statuses = await apiClient.get<Status[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/statuses`,
@@ -110,7 +95,8 @@ export function registerMasterDataTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }
@@ -147,27 +133,11 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
-        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
-        const whitelistManager = configManager.getWhitelistManager();
-        if (whitelistManager?.isWhitelistEnabled()) {
-          // プロジェクト情報を取得してキーとIDを両方取得
-          const project = await apiClient.get<{
-            id: number;
-            projectKey: string;
-          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
-
-          const isAllowed = whitelistManager.validateProjectAccess(
-            project.projectKey,
-            String(project.id),
-          );
-          if (!isAllowed) {
-            throw new Error(
-              whitelistManager.createAccessDeniedMessage(
-                `${project.projectKey} (ID: ${project.id})`,
-              ),
-            );
-          }
-        }
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
 
         const resolutions = await apiClient.get<Resolution[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/resolutions`,
@@ -186,7 +156,8 @@ export function registerMasterDataTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }
@@ -223,27 +194,11 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
-        // ホワイトリスト検証 - プロジェクト情報を取得して両方で検証
-        const whitelistManager = configManager.getWhitelistManager();
-        if (whitelistManager?.isWhitelistEnabled()) {
-          // プロジェクト情報を取得してキーとIDを両方取得
-          const project = await apiClient.get<{
-            id: number;
-            projectKey: string;
-          }>(`/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`);
-
-          const isAllowed = whitelistManager.validateProjectAccess(
-            project.projectKey,
-            String(project.id),
-          );
-          if (!isAllowed) {
-            throw new Error(
-              whitelistManager.createAccessDeniedMessage(
-                `${project.projectKey} (ID: ${project.id})`,
-              ),
-            );
-          }
-        }
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
 
         const categories = await apiClient.get<Category[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/categories`,
@@ -262,7 +217,8 @@ export function registerMasterDataTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }

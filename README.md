@@ -136,16 +136,29 @@ BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2,12345"
 - デフォルトプロジェクトは必ずホワイトリストに含まれている必要があります
 - ホワイトリストに含まれていない場合、起動時にエラーが発生します
 
+> **注意**: 起動時の検証は API を呼び出さず、設定された文字列をそのまま照合します。
+> `BACKLOG_DEFAULT_PROJECT` と `BACKLOG_PROJECT_WHITELIST` は**同じ形式**（キーならキー、IDならID）で揃えてください。
+> 例えば `BACKLOG_DEFAULT_PROJECT="PROJ1"`（キー）に対して `BACKLOG_PROJECT_WHITELIST="12345"`（ID）のように別形式で設定すると、起動時エラーになります。
+
 **正しい設定例**:
 ```bash
+# キー形式で統一
 export BACKLOG_DEFAULT_PROJECT="PROJ1"
-export BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2"  # PROJ1を含む
+export BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2"  # 同じキー形式で PROJ1 を含む
+
+# ID形式で統一する場合
+export BACKLOG_DEFAULT_PROJECT="12345"
+export BACKLOG_PROJECT_WHITELIST="12345,67890"  # 同じID形式で 12345 を含む
 ```
 
 **エラーになる設定例**:
 ```bash
 export BACKLOG_DEFAULT_PROJECT="PROJ1"
 export BACKLOG_PROJECT_WHITELIST="PROJ2,PROJ3"  # PROJ1が含まれていない → エラー
+
+# 形式が混在する場合もエラー
+export BACKLOG_DEFAULT_PROJECT="PROJ1"          # キー形式
+export BACKLOG_PROJECT_WHITELIST="12345,67890"  # ID形式 → 文字列不一致でエラー
 ```
 
 ### エラーメッセージ

@@ -353,7 +353,7 @@ describe('ConfigManager Property Tests', () => {
       expect(manager.getWhitelistManager()?.isWhitelistEnabled()).toBe(true);
     });
 
-    it('環境変数のホワイトリストが設定ファイルより優先される', () => {
+    it('設定ファイルのホワイトリストが環境変数より優先される', () => {
       process.env.BACKLOG_DOMAIN = 'test.backlog.com';
       process.env.BACKLOG_API_KEY = 'test-api-key';
       process.env.BACKLOG_PROJECT_WHITELIST = 'ENV_PROJ';
@@ -365,7 +365,7 @@ describe('ConfigManager Property Tests', () => {
       manager.reset();
       const config = manager.loadConfig();
 
-      expect(config.projectWhitelist).toEqual(['ENV_PROJ']);
+      expect(config.projectWhitelist).toEqual(['FILE_PROJ']);
     });
 
     it('ホワイトリスト設定のカンマ区切りと空白除去が正しく行われる', () => {

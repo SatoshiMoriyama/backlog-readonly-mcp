@@ -7,6 +7,7 @@
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
 import { ConfigManager } from '../config/config-manager.js';
 import type { BacklogWiki } from '../types/index.js';
+import { assertProjectWhitelistAllowed } from '../utils/whitelist-helpers.js';
 import type { ToolRegistry } from './tool-registry.js';
 
 /**
@@ -190,28 +191,12 @@ export function registerWikiTools(
           `/wikis/${encodeURIComponent(wikiId)}`,
         );
 
-        // ホワイトリスト検証
         const configManager = ConfigManager.getInstance();
-        const whitelistManager = configManager.getWhitelistManager();
-        if (whitelistManager?.isWhitelistEnabled()) {
-          // プロジェクト情報を取得してキーを取得
-          const project = await apiClient.get<{
-            id: number;
-            projectKey: string;
-          }>(`/projects/${wiki.projectId}`);
-
-          const isAllowed = whitelistManager.validateProjectAccess(
-            String(wiki.projectId),
-            project.projectKey,
-          );
-          if (!isAllowed) {
-            throw new Error(
-              whitelistManager.createAccessDeniedMessage(
-                `${project.projectKey} (ID: ${wiki.projectId})`,
-              ),
-            );
-          }
-        }
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          wiki.projectId,
+        );
 
         return {
           success: true,
@@ -219,6 +204,13 @@ export function registerWikiTools(
           message: `Wikiページ "${wiki.name}" を取得しました`,
         };
       } catch (error) {
+        if (
+          error instanceof Error &&
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
+        ) {
+          throw error;
+        }
         throw new Error(
           `Wikiページの取得に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
         );

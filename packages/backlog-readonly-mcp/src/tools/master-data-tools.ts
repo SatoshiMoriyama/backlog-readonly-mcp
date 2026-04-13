@@ -7,6 +7,7 @@
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
 import { ConfigManager } from '../config/config-manager.js';
 import type { Category, Priority, Resolution, Status } from '../types/index.js';
+import { assertProjectWhitelistAllowed } from '../utils/whitelist-helpers.js';
 import type { ToolRegistry } from './tool-registry.js';
 
 /**
@@ -71,6 +72,12 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
+
         const statuses = await apiClient.get<Status[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/statuses`,
         );
@@ -88,7 +95,8 @@ export function registerMasterDataTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }
@@ -125,6 +133,12 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
+
         const resolutions = await apiClient.get<Resolution[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/resolutions`,
         );
@@ -142,7 +156,8 @@ export function registerMasterDataTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }
@@ -179,6 +194,12 @@ export function registerMasterDataTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
+
         const categories = await apiClient.get<Category[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/categories`,
         );
@@ -196,7 +217,8 @@ export function registerMasterDataTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }

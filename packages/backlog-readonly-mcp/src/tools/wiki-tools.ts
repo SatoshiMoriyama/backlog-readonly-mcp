@@ -5,7 +5,9 @@
  */
 
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
+import { ConfigManager } from '../config/config-manager.js';
 import type { BacklogWiki } from '../types/index.js';
+import { assertProjectWhitelistAllowed } from '../utils/whitelist-helpers.js';
 import type { ToolRegistry } from './tool-registry.js';
 
 /**
@@ -52,37 +54,77 @@ export function registerWikiTools(
 
         let filteredWikis = recentWikis;
 
+        // ホワイトリスト検証のためにプロジェクトIDからキーへのマッピングを作成
+        const configManager = ConfigManager.getInstance();
+        const whitelistManager = configManager.getWhitelistManager();
+        let projectIdToKeyMap: Map<number, string> | null = null;
+
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // プロジェクト一覧を取得してマッピングを作成
+          try {
+            const projects =
+              await apiClient.get<Array<{ id: number; projectKey: string }>>(
+                '/projects',
+              );
+            projectIdToKeyMap = new Map(
+              projects.map((p) => [p.id, p.projectKey]),
+            );
+          } catch (projectError) {
+            throw new Error(
+              `プロジェクト一覧の取得に失敗しました: ${projectError instanceof Error ? projectError.message : '不明なエラー'}`,
+            );
+          }
+
+          // ホワイトリストでフィルタリング（プロジェクトIDとキーの両方で検証）
+          filteredWikis = filteredWikis.filter((wiki) => {
+            const projectKey = projectIdToKeyMap?.get(wiki.projectId);
+            return whitelistManager.validateProjectAccess(
+              String(wiki.projectId),
+              projectKey,
+            );
+          });
+        }
+
         // プロジェクトIDまたはキーでフィルタリング
         if (projectIdOrKey) {
-          // プロジェクトキーが指定された場合、プロジェクト一覧を取得してIDに変換
           let targetProjectId: number | null = null;
 
           // 数値の場合はプロジェクトIDとして扱う
           if (/^\d+$/.test(projectIdOrKey)) {
             targetProjectId = parseInt(projectIdOrKey, 10);
           } else {
-            // プロジェクトキーの場合、プロジェクト一覧から対応するIDを検索
-            try {
-              const projects =
-                await apiClient.get<Array<{ id: number; projectKey: string }>>(
-                  '/projects',
-                );
-              const project = projects.find(
-                (p) => p.projectKey === projectIdOrKey,
-              );
-              if (project) {
-                targetProjectId = project.id;
+            // プロジェクトキーの場合、IDに変換
+            // 既にプロジェクト一覧を取得している場合はそれを使用
+            if (projectIdToKeyMap) {
+              for (const [id, key] of projectIdToKeyMap.entries()) {
+                if (key === projectIdOrKey) {
+                  targetProjectId = id;
+                  break;
+                }
               }
-            } catch (projectError) {
-              // プロジェクト一覧取得に失敗した場合はエラーを返す
-              throw new Error(
-                `プロジェクト一覧の取得に失敗しました。プロジェクトキー "${projectIdOrKey}" の確認ができません: ${projectError instanceof Error ? projectError.message : '不明なエラー'}`,
-              );
+            } else {
+              // プロジェクト一覧を取得
+              try {
+                const projects =
+                  await apiClient.get<
+                    Array<{ id: number; projectKey: string }>
+                  >('/projects');
+                const project = projects.find(
+                  (p) => p.projectKey === projectIdOrKey,
+                );
+                if (project) {
+                  targetProjectId = project.id;
+                }
+              } catch (projectError) {
+                throw new Error(
+                  `プロジェクト一覧の取得に失敗しました: ${projectError instanceof Error ? projectError.message : '不明なエラー'}`,
+                );
+              }
             }
           }
 
           if (targetProjectId !== null) {
-            filteredWikis = recentWikis.filter((wiki) => {
+            filteredWikis = filteredWikis.filter((wiki) => {
               return wiki.projectId === targetProjectId;
             });
           } else {
@@ -149,12 +191,26 @@ export function registerWikiTools(
           `/wikis/${encodeURIComponent(wikiId)}`,
         );
 
+        const configManager = ConfigManager.getInstance();
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          wiki.projectId,
+        );
+
         return {
           success: true,
           data: wiki,
           message: `Wikiページ "${wiki.name}" を取得しました`,
         };
       } catch (error) {
+        if (
+          error instanceof Error &&
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
+        ) {
+          throw error;
+        }
         throw new Error(
           `Wikiページの取得に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
         );

@@ -7,6 +7,7 @@
 import type { BacklogApiClient } from '../client/backlog-api-client.js';
 import { ConfigManager } from '../config/config-manager.js';
 import type { BacklogProject, BacklogUser } from '../types/index.js';
+import { assertProjectWhitelistAllowed } from '../utils/whitelist-helpers.js';
 import type { ToolRegistry } from './tool-registry.js';
 
 /**
@@ -57,11 +58,20 @@ export function registerProjectTools(
         params,
       );
 
+      // ホワイトリストでフィルタリング（要件3）
+      const configManager = ConfigManager.getInstance();
+      const whitelistManager = configManager.getWhitelistManager();
+      const filteredProjects = whitelistManager
+        ? whitelistManager.filterProjects(projects)
+        : projects;
+
       return {
         success: true,
-        data: projects,
-        count: projects.length,
-        message: `${projects.length}件のプロジェクトを取得しました`,
+        data: filteredProjects,
+        count: filteredProjects.length,
+        message: `${filteredProjects.length}件のプロジェクトを取得しました`,
+        isFiltered: whitelistManager?.isWhitelistEnabled() || false,
+        originalCount: projects.length,
       };
     },
   );
@@ -92,9 +102,27 @@ export function registerProjectTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        // プロジェクト情報を取得
         const project = await apiClient.get<BacklogProject>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}`,
         );
+
+        // get_project は既にプロジェクト情報を取得済みのため、assertProjectWhitelistAllowed を
+        // 使わずインラインで検証する（ヘルパーを使うと /projects/{id} を二重に呼ぶことになる）
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          const isAllowed = whitelistManager.validateProjectAccess(
+            project.projectKey,
+            String(project.id),
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                `${project.projectKey} (ID: ${project.id})`,
+              ),
+            );
+          }
+        }
 
         const isDefaultProject =
           !projectIdOrKey && configManager.hasDefaultProject();
@@ -108,7 +136,8 @@ export function registerProjectTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }
@@ -145,6 +174,12 @@ export function registerProjectTools(
         const resolvedProjectIdOrKey =
           configManager.resolveProjectIdOrKey(projectIdOrKey);
 
+        await assertProjectWhitelistAllowed(
+          apiClient,
+          configManager,
+          resolvedProjectIdOrKey,
+        );
+
         const users = await apiClient.get<BacklogUser[]>(
           `/projects/${encodeURIComponent(resolvedProjectIdOrKey)}/users`,
         );
@@ -162,7 +197,8 @@ export function registerProjectTools(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('デフォルトプロジェクト')
+          (error.message.includes('デフォルトプロジェクト') ||
+            error.message.includes('ホワイトリスト'))
         ) {
           throw error;
         }

@@ -11,6 +11,7 @@ import type {
   BacklogComment,
   BacklogIssue,
 } from '../types/index.js';
+import * as logger from '../utils/logger.js';
 import type { ToolRegistry } from './tool-registry.js';
 
 /**
@@ -238,6 +239,44 @@ export function registerIssueTools(
           resolvedProjectId = configManager.getDefaultProject();
         }
 
+        // ホワイトリスト検証（要件5）
+        if (resolvedProjectId) {
+          const whitelistManager = configManager.getWhitelistManager();
+          if (whitelistManager?.isWhitelistEnabled()) {
+            // projectId には数値IDだけでなくプロジェクトキーが渡されることもあるため、
+            // /projects/{id or key} で実プロジェクト情報を解決して、
+            // 検証時にはIDとキーの両方を渡す
+            let validatedProjectId = resolvedProjectId;
+            let projectKey: string | undefined;
+
+            try {
+              const project = await apiClient.get<{
+                id: number;
+                projectKey: string;
+              }>(`/projects/${encodeURIComponent(resolvedProjectId)}`);
+              validatedProjectId = String(project.id);
+              projectKey = project.projectKey;
+            } catch (_error) {
+              // プロジェクト取得失敗時は解決済み入力値のみで検証
+              projectKey = undefined;
+            }
+
+            const isAllowed = whitelistManager.validateProjectAccess(
+              validatedProjectId,
+              projectKey,
+            );
+            if (!isAllowed) {
+              throw new Error(
+                whitelistManager.createAccessDeniedMessage(
+                  projectKey
+                    ? `${projectKey} (ID: ${validatedProjectId})`
+                    : validatedProjectId,
+                ),
+              );
+            }
+          }
+        }
+
         // クエリパラメータの構築
         const params: Record<string, unknown> = {};
 
@@ -270,7 +309,43 @@ export function registerIssueTools(
         if (dueDateUntil) params.dueDateUntil = dueDateUntil;
         if (keyword) params.keyword = keyword;
 
-        const issues = await apiClient.get<BacklogIssue[]>('/issues', params);
+        let issues = await apiClient.get<BacklogIssue[]>('/issues', params);
+
+        // ホワイトリストでフィルタリング（projectIdが指定されていない場合）
+        const whitelistManager = configManager.getWhitelistManager();
+        if (!resolvedProjectId && whitelistManager?.isWhitelistEnabled()) {
+          // プロジェクト一覧を取得してID→キーのマッピングを作成
+          let projectIdToKeyMap: Map<number, string> | null = null;
+          try {
+            const projects =
+              await apiClient.get<Array<{ id: number; projectKey: string }>>(
+                '/projects',
+              );
+            projectIdToKeyMap = new Map(
+              projects.map((p) => [p.id, p.projectKey]),
+            );
+          } catch (projectError) {
+            throw new Error(
+              `プロジェクト一覧の取得に失敗しました: ${projectError instanceof Error ? projectError.message : '不明なエラー'}`,
+            );
+          }
+
+          // 課題をホワイトリストでフィルタリング
+          const originalCount = issues.length;
+          issues = issues.filter((issue) => {
+            const projectKey = projectIdToKeyMap?.get(issue.projectId);
+            return whitelistManager.validateProjectAccess(
+              String(issue.projectId),
+              projectKey,
+            );
+          });
+
+          if (originalCount > issues.length) {
+            logger.info(
+              `課題一覧をホワイトリストでフィルタリング: ${originalCount}件 → ${issues.length}件`,
+            );
+          }
+        }
 
         const isDefaultProject =
           !projectId && configManager.hasDefaultProject();
@@ -311,11 +386,37 @@ export function registerIssueTools(
     },
     async (args) => {
       const { issueIdOrKey } = args as { issueIdOrKey: string };
+      const configManager = ConfigManager.getInstance();
 
       try {
+        // 入力値が課題キー形式の場合に備えて、プロジェクトキーを事前抽出しておく
+        const inputProjectKey = extractProjectKeyFromIssueKey(issueIdOrKey);
+
+        // 課題を取得
         const issue = await apiClient.get<BacklogIssue>(
           `/issues/${encodeURIComponent(issueIdOrKey)}`,
         );
+
+        // 入力形式に関係なく、取得した課題の projectId と projectKey の両方でホワイトリスト検証
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // 通常は取得した issueKey からプロジェクトキーを復元し、取得できない場合のみ入力値からの抽出結果を使う
+          const resolvedProjectKey =
+            extractProjectKeyFromIssueKey(issue.issueKey) ?? inputProjectKey;
+          const isAllowed = whitelistManager.validateProjectAccess(
+            String(issue.projectId),
+            resolvedProjectKey ?? undefined,
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                resolvedProjectKey
+                  ? `${resolvedProjectKey} (ID: ${issue.projectId})`
+                  : String(issue.projectId),
+              ),
+            );
+          }
+        }
 
         return {
           success: true,
@@ -379,7 +480,38 @@ export function registerIssueTools(
         order?: string;
       };
 
+      const configManager = ConfigManager.getInstance();
+
       try {
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // 入力形式（課題キー/数値ID）にかかわらず課題詳細から projectId を取得し、
+          // projectId と projectKey の両方でホワイトリストを検証する
+          const issue = await apiClient.get<BacklogIssue>(
+            `/issues/${encodeURIComponent(issueIdOrKey)}`,
+          );
+          const requestedProjectKey =
+            extractProjectKeyFromIssueKey(issueIdOrKey);
+          const extractedProjectKey = extractProjectKeyFromIssueKey(
+            issue.issueKey,
+          );
+          const projectKey = extractedProjectKey ?? requestedProjectKey;
+          const isAllowed = whitelistManager.validateProjectAccess(
+            String(issue.projectId),
+            projectKey ?? undefined,
+          );
+
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                projectKey
+                  ? `${projectKey} (ID: ${issue.projectId})`
+                  : String(issue.projectId),
+              ),
+            );
+          }
+        }
+
         const params: Record<string, unknown> = {
           count: Math.min(count, 100), // 最大100件に制限
           order,
@@ -427,8 +559,33 @@ export function registerIssueTools(
     },
     async (args) => {
       const { issueIdOrKey } = args as { issueIdOrKey: string };
+      const configManager = ConfigManager.getInstance();
 
       try {
+        const whitelistManager = configManager.getWhitelistManager();
+        if (whitelistManager?.isWhitelistEnabled()) {
+          // 入力が課題IDでも課題キーでも、課題詳細から projectId / projectKey の両方を取得して検証する
+          const issue = await apiClient.get<BacklogIssue>(
+            `/issues/${encodeURIComponent(issueIdOrKey)}`,
+          );
+          const extractedProjectKey = extractProjectKeyFromIssueKey(
+            issue.issueKey,
+          );
+          const isAllowed = whitelistManager.validateProjectAccess(
+            String(issue.projectId),
+            extractedProjectKey ?? undefined,
+          );
+          if (!isAllowed) {
+            throw new Error(
+              whitelistManager.createAccessDeniedMessage(
+                extractedProjectKey
+                  ? `${extractedProjectKey} (ID: ${issue.projectId})`
+                  : String(issue.projectId),
+              ),
+            );
+          }
+        }
+
         const attachments = await apiClient.get<Attachment[]>(
           `/issues/${encodeURIComponent(issueIdOrKey)}/attachments`,
         );
@@ -446,4 +603,17 @@ export function registerIssueTools(
       }
     },
   );
+}
+
+/**
+ * 課題キーからプロジェクトキーを抽出
+ * 例: "MYPROJ-123" → "MYPROJ"
+ * 要件5.4: 課題キーからプロジェクトキー部分を抽出
+ *
+ * @param issueKey 課題キー
+ * @returns プロジェクトキー、または抽出できない場合はnull
+ */
+function extractProjectKeyFromIssueKey(issueKey: string): string | null {
+  const match = issueKey.match(/^([A-Z][A-Z0-9_]*)-\d+$/);
+  return match ? match[1] : null;
 }

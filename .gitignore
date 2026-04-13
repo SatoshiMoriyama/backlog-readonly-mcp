@@ -207,3 +207,7 @@ blog_content/*.webp
 
 # Backlog readonly backlog
 .backlog-mcp.env
+.claude/mcp.json
+.kiro/settings/mcp.json
+.kiro/settings/mcp.json
+.mcp.json

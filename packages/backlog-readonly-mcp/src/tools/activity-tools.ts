@@ -55,7 +55,7 @@ type CommonActivityArgs = {
   minId?: number;
   maxId?: number;
   count?: number;
-  order?: string;
+  order?: 'asc' | 'desc';
   since?: string;
   until?: string;
 };

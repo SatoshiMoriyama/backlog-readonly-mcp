@@ -234,7 +234,7 @@ export interface BacklogActivity {
   };
   type: number;
   content: BacklogActivityContent;
-  notifications: unknown[];
+  notifications: Notification[];
   createdUser: BacklogUser;
   created: string;
 }

@@ -23,14 +23,14 @@ export function registerDocumentTools(
     {
       name: 'get_documents',
       description:
-        'ドキュメント一覧を取得します（読み取り専用）。プロジェクトIDを指定しない場合、参加している全プロジェクトのドキュメントを取得します。',
+        'ドキュメント一覧を取得します（読み取り専用）。プロジェクトIDを指定しない場合、デフォルトプロジェクトが設定されていればそれを使用し、未設定なら参加している全プロジェクトのドキュメントを取得します。',
       inputSchema: {
         type: 'object',
         properties: {
           projectId: {
             type: 'string',
             description:
-              'プロジェクトIDまたはプロジェクトキー。省略時はデフォルトプロジェクトを使用します。',
+              'プロジェクトIDまたはプロジェクトキー。省略時はデフォルトプロジェクトを使用し、デフォルトプロジェクトも未設定の場合は全プロジェクトから取得します。',
           },
           keyword: {
             type: 'string',
@@ -181,7 +181,7 @@ export function registerDocumentTools(
             sort,
             order,
             offset,
-            count,
+            count: Math.min(count, 100),
           },
         };
       } catch (error) {

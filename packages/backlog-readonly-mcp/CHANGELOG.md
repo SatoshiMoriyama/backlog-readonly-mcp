@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-XX-XX
+
+### Added
+- プロジェクトホワイトリスト機能（`BACKLOG_PROJECT_WHITELIST` 環境変数によるアクセス制限）
+- アクティビティ関連ツール: `get_space_activities`, `get_project_activities`, `get_user_activities`
+- `get_default_project` ツール（デフォルトプロジェクト情報取得）
+- `test_connection` ツール（MCP サーバー接続テスト）
+- `BACKLOG_CONFIG_PATH` 環境変数による設定ファイルパスの指定
+- アクティビティの日付フィルタリング（`since`/`until` パラメータ）
+- アクティビティの日時を JST で表示する機能
+- デフォルトプロジェクト機能の全ツール対応（`get_project`, `get_project_users`, `get_statuses`, `get_categories` 等）
+- ホワイトリストによる課題・Wiki・アクティビティの自動フィルタリング
+
+### Changed
+- 環境変数名を `BACKLOG_SPACE_KEY` から `BACKLOG_DOMAIN` に変更
+
 ## [0.1.2] - 2026-01-15
 
 ### Changed
@@ -36,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - プロジェクト、課題、Wiki、ユーザー情報の取得機能
 - 環境変数による設定（BACKLOG_SPACE_KEY, BACKLOG_API_KEY, BACKLOG_DEFAULT_PROJECT_KEY）
 
-[Unreleased]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/releases/tag/v0.1.1

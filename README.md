@@ -1,7 +1,5 @@
 # Backlog読み取り専用MCPサーバー
 
-> **注意**: このプロジェクトは現在仕様策定段階です。実装はまだ完了していません。
-
 Backlog の API を利用して、プロジェクト、課題、ユーザー、Wiki などの情報を読み取り専用で提供します。
 Model Context Protocol（MCP）サーバーです。
 セキュリティを重視し、データの変更や作成は一切行いません。
@@ -27,8 +25,9 @@ Model Context Protocol（MCP）サーバーです。
 
 ### プロジェクト関連
 - `get_projects`: プロジェクト一覧取得
-- `get_project`: プロジェクト詳細取得
-- `get_project_users`: プロジェクトメンバー取得
+- `get_project`: プロジェクト詳細取得（省略時はデフォルトプロジェクトを使用）
+- `get_project_users`: プロジェクトメンバー取得（省略時はデフォルトプロジェクトを使用）
+- `get_default_project`: デフォルトプロジェクト情報取得
 
 ### 課題関連
 - `get_issues`: 課題一覧取得（検索条件付き）
@@ -42,7 +41,7 @@ Model Context Protocol（MCP）サーバーです。
 - `get_myself`: 自分のユーザー情報取得
 
 ### Wiki関連
-- `get_wikis`: Wiki 一覧取得
+- `get_recent_wikis`: 最近閲覧したWiki一覧取得（プロジェクト・キーワード絞り込み対応）
 - `get_wiki`: 特定 Wiki ページ取得
 
 ### アクティビティ関連
@@ -56,7 +55,10 @@ Model Context Protocol（MCP）サーバーです。
 - `get_resolutions`: 完了理由の一覧取得
 - `get_categories`: カテゴリ一覧取得
 
-## インストール（実装完了後）
+### 接続テスト
+- `test_connection`: MCPサーバーの接続テスト
+
+## インストール
 
 ```bash
 npm install
@@ -77,6 +79,7 @@ export BACKLOG_DOMAIN="your-company.backlog.com"
 ```bash
 export BACKLOG_DEFAULT_PROJECT="MYPROJ"           # デフォルトプロジェクトキー
 export BACKLOG_PROJECT_WHITELIST="PROJ1,PROJ2"   # アクセス許可プロジェクト（ホワイトリスト）
+export BACKLOG_CONFIG_PATH="/path/to/.backlog-mcp.env"  # 設定ファイルのパス（デフォルト: .backlog-mcp.env）
 export BACKLOG_MAX_RETRIES="3"                    # リトライ回数
 export BACKLOG_TIMEOUT="30000"                    # タイムアウト（ms）
 ```
@@ -277,7 +280,7 @@ await callTool("get_space_activities", {
 });
 ```
 
-## 開発（実装完了後）
+## 開発
 
 ### 依存関係のインストール
 ```bash

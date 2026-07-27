@@ -8,7 +8,8 @@ Backlog API を利用して、プロジェクト、課題、ユーザー情報�
 
 - 🔒 **完全読み取り専用**: データの変更・作成は一切行わない安全設計
 - 🏢 **ワークスペース対応**: プロジェクトごとに異なる Backlog 設定が可能
-- 🛠️ **豊富なツール**: プロジェクト、課題、ユーザー、Wiki、ドキュメント、マスタデータの取得
+- 🛠️ **豊富なツール**: プロジェクト、課題、ユーザー、Wiki、ドキュメント、アクティビティ、マスタデータの取得
+- 🔐 **プロジェクトホワイトリスト**: アクセス可能なプロジェクトを制限可能
 - 🔑 **セキュア**: API キーの安全な管理とマスキング機能
 - 📊 **包括的エラーハンドリング**: 詳細なログとユーザーフレンドリーなエラーメッセージ
 
@@ -158,6 +159,11 @@ MCPクライアントが `${workspaceFolder}` 変数をサポートしている�
 - `get_document` - 特定ドキュメントの取得
 - `get_document_tree` - ドキュメントツリー構造の取得
 
+### アクティビティ関連
+- `get_space_activities` - スペース全体のアクティビティ取得
+- `get_project_activities` - プロジェクトのアクティビティ取得
+- `get_user_activities` - ユーザーのアクティビティ取得
+
 ### マスタデータ関連
 - `get_priorities` - 優先度一覧の取得
 - `get_statuses` - ステータス一覧の取得
@@ -194,6 +200,8 @@ MCP 設定が完了すると、AI アシスタント（Kiro、Claude 等）が�
 | `BACKLOG_DOMAIN` | ✅ | - | Backlogドメイン（例: company.backlog.com） |
 | `BACKLOG_API_KEY` | ✅ | - | Backlog APIキー |
 | `BACKLOG_DEFAULT_PROJECT` | ❌ | - | デフォルトプロジェクトキー |
+| `BACKLOG_PROJECT_WHITELIST` | ❌ | - | アクセス可能なプロジェクトの制限（カンマ区切り） |
+| `BACKLOG_CONFIG_PATH` | ❌ | - | 設定ファイルのパス |
 | `BACKLOG_MAX_RETRIES` | ❌ | 3 | APIリクエストのリトライ回数 |
 | `BACKLOG_TIMEOUT` | ❌ | 30000 | APIリクエストのタイムアウト（ms） |
 | `FASTMCP_LOG_LEVEL` | ❌ | INFO | ログレベル（ERROR, WARN, INFO, DEBUG） |

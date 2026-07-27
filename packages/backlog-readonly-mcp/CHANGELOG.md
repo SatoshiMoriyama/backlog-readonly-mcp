@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-XX-XX
+## [1.0.0] - 2026-07-28
+
+### Added
+- ドキュメント関連ツール: `get_documents`, `get_document`, `get_document_tree`
+- ドキュメント一覧のプロジェクト指定・キーワード検索・ページネーション対応
+- ドキュメントツリー構造（親子関係）の取得
+- ドキュメントのホワイトリストフィルタリング対応
+
+### Changed
+- 安定版としてリリース（主要な読み取りAPIをカバー）
+
+## [0.2.0] - 2026-07-27
 
 ### Added
 - プロジェクトホワイトリスト機能（`BACKLOG_PROJECT_WHITELIST` 環境変数によるアクセス制限）
@@ -52,7 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - プロジェクト、課題、Wiki、ユーザー情報の取得機能
 - 環境変数による設定（BACKLOG_SPACE_KEY, BACKLOG_API_KEY, BACKLOG_DEFAULT_PROJECT_KEY）
 
-[Unreleased]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/SatoshiMoriyama/backlog-readonly-mcp/releases/tag/v0.1.1

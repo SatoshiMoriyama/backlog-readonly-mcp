@@ -259,6 +259,54 @@ export interface WikiTag {
   name: string;
 }
 
+// ドキュメント関連の型
+export interface BacklogDocument {
+  id: string;
+  projectId: number;
+  title: string;
+  plain: string | null;
+  statusId: number;
+  emoji: string | null;
+  attachments: DocumentAttachment[];
+  tags: DocumentTag[];
+  createdUser: BacklogUser;
+  created: string;
+  updatedUser: BacklogUser;
+  updated: string;
+}
+
+export interface DocumentAttachment {
+  id: number;
+  name: string;
+  size: number;
+  createdUser: BacklogUser;
+  created: string;
+}
+
+export interface DocumentTag {
+  id: number;
+  name: string;
+}
+
+export interface DocumentTreeNode {
+  id: string;
+  name: string;
+  children: DocumentTreeNode[];
+  emoji?: string;
+}
+
+export interface BacklogDocumentTree {
+  projectId: number;
+  activeTree: {
+    id: string;
+    children: DocumentTreeNode[];
+  };
+  trashTree: {
+    id: string;
+    children: DocumentTreeNode[];
+  };
+}
+
 // エラー関連の型
 export interface BacklogError {
   code: string;
